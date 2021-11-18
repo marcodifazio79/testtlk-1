@@ -38,9 +38,61 @@ namespace TestCasseTLK
  
             connection = new MySqlConnection(connectionString);
 
-            RemoveMachine();
-            // check_DatiConnessione();
+            //string splittransferred_data2 = "porco01010101";
+            //string splittransferred_data0 = "<TPK =W5";
+            //if (!IsNumeric(splittransferred_data2) & !(splittransferred_data0.Contains("<TPK=$I")))
+            //{
+
+            //    Console.WriteLine("è un concentratore");
+            //}
+
+
+
+
+            //if (connection.State == ConnectionState.Closed) connection.Open();
+            //MySqlCommand newcmd;
+            //string query;
+            //try
+            //{
+            //    query = "select* from DatiCassa where Id =88;";
+            //    newcmd = new MySqlCommand(query, connection);
+            //    MySqlDataReader dataReader = newcmd.ExecuteReader();
+            //    while (dataReader.Read())
+            //    {
+            //        Console.WriteLine(dataReader["Id"].ToString() );
+
+            //    }
+
+            //}
+            //catch (Exception ex)
+            //{
+            //    Console.WriteLine("ERROR - DeleteCashTransTables: " + ex.Message);
+            //    //connection.Close();
+
+            //}
+
+            //RemoveMachine();
+            Svuota_DB();
+            //check_DatiConnessione();
+            // test_daticash_convert();
         }
+        public static bool IsNumeric(string strText)
+        {
+            bool bres = false;
+            try
+            {
+                //Console.WriteLine(strText);   
+                Int64 result = Convert.ToInt64(strText);
+                bres = true;
+                return bres;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return bres;
+            }
+        }
+
         private void test_daticash_convert()
         {
             string splittedCashPacket = "9400";
@@ -49,6 +101,9 @@ namespace TestCasseTLK
             int actualParam = Convert.ToInt32(splittedCashPacket);
 
             string valueres = ((float)(actualParam - previousParam) / 100).ToString();
+
+
+            string dataCass_Qty1 = (Convert.ToInt32(splittedCashPacket) - Convert.ToInt32(splittedCashPacket_previous)).ToString();
 
             //float value =(float) intsplittedCashPacket_previous / 100;
 
@@ -197,14 +252,47 @@ namespace TestCasseTLK
             
 
         }
-        private void RemoveMachine()
+
+        private void Svuota_DB()
+        {
+            if (connection.State == ConnectionState.Closed) connection.Open();
+            MySqlCommand newcmd;
+            string query = "";
+
+            query = "Delete FROM Log;";
+            newcmd = new MySqlCommand(query, connection);
+            newcmd.ExecuteNonQuery();
+
+            query = "Delete FROM RemoteCommand;";
+            newcmd = new MySqlCommand(query, connection);
+            newcmd.ExecuteNonQuery();
+
+            query = "Delete FROM MachinesAttributes;";
+            newcmd = new MySqlCommand(query, connection);
+            newcmd.ExecuteNonQuery();
+
+            query = "Delete from MachinesConnectionTrace;";
+            newcmd = new MySqlCommand(query, connection);
+            newcmd.ExecuteNonQuery();
+
+            query = "Delete FROM CashTransaction;";
+            newcmd = new MySqlCommand(query, connection);
+            newcmd.ExecuteNonQuery();
+
+            query = "Delete FROM Machines;";
+            newcmd = new MySqlCommand(query, connection);
+            newcmd.ExecuteNonQuery();
+
+        }
+            private void RemoveMachine()
         {
             //MySqlConnection connection;
             //connection = new MySqlConnection(connectionString);
             if(connection.State==ConnectionState.Closed) connection.Open();
+
             string query = "";
-            query = "select * from Machines where id = '11182' ;";
-            query = " SELECT * from Machines where last_communication like '2021-11-10 14%';";
+            query = "select * from Machines where id=11437;";
+            //query = " SELECT * from Machines where last_communication like '2021-11-10 14%';";
             //query = "SELECT * FROM Machines where mid like '%RecuperoInCorso..%'";
             //query = "SELECT * FROM Machines where mid like '%Duplicato%'";
 
@@ -247,6 +335,7 @@ namespace TestCasseTLK
                 }
                 
            
+
 
                 connection.Close();
 
@@ -338,7 +427,7 @@ namespace TestCasseTLK
                 newcmd = new MySqlCommand(query, connection);
                 newcmd.ExecuteNonQuery();
 
-                connection.Close();
+                //connection.Close();
                 return true;
             }
             catch(MySqlException e)
@@ -360,7 +449,7 @@ namespace TestCasseTLK
                 query = "Delete FROM RemoteCommand  where id_Macchina = " + id_machine;
                 newcmd = new MySqlCommand(query, connection);
                 newcmd.ExecuteNonQuery();
-                connection.Close();
+                //connection.Close();
                 return true;
             }
             catch (MySqlException e)
