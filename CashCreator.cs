@@ -1008,7 +1008,8 @@ namespace TestCasseTLK
             return newcas ;
 
         }
-         public static void LoadDatiCassaTable(string mid,string transactionId, string lastCassPacket,string CassJson,string transStatus)
+        
+        public static void LoadDatiCassaTable(string mid,string transactionId, string lastCassPacket,string CassJson,string transStatus)
         {
            
             try
