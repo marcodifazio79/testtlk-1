@@ -18,12 +18,13 @@ namespace TestCasseTLK
     {
         MySqlConnection connection;
 
-        string serverip = "10.10.10.37";
+        string serverip = "95.61.6.94";// "10.10.10.37";
         string database = "listener_DB";
         string uid = "bot_user";
         string password = "Qwert@#!99";
         //string connectionString = "server = localhost; database = lister_DB; uid = root; pwd = ;";
-        string connectionString = "server = 10.10.10.37; database = listener_DB; uid = bot_user; pwd = Qwert@#!99;";
+        string connectionString = "server = 95.61.6.94; database = listener_DB; uid = bot_user; pwd = Qwert@#!99;";
+        //string connectionString = "server = 10.10.10.37; database = listener_DB; uid = bot_user; pwd = Qwert@#!99;";
 
         //string id_Fake = "3973";
 
@@ -51,9 +52,9 @@ namespace TestCasseTLK
             //LoadModemToConfig("172.16.162.20", 789789789789789, "77770001");
             
             // testMID(); 
-            RemoveMachine();
+            //RemoveMachine();
 
-            //check_DatiConnessione();
+            check_Dati();
             // test_daticash_convert();
         }
 
@@ -116,7 +117,7 @@ namespace TestCasseTLK
             string dataCass_Cashless = ((Convert.ToInt32(splittedCashPacket) - Convert.ToInt32(splittedCashPacket_previous)) / 100).ToString();
         }
 
-        private void check_DatiConnessione()
+        private void check_Dati()
         {
             try
             {
@@ -129,9 +130,9 @@ namespace TestCasseTLK
                 //string query = "SELECT distinct (id_Macchina) FROM MachinesConnectionTrace WHERE transferred_data LIKE '<TPK=$M3%';";
                 
                 query = "select * from Machines where IsOnline = 0;";
-                query = "select * from CashTransaction where ODM = 'DDIGIORGIO1637678253587' or ODM = 'DDIGIORGIO1637680109018' or ODM = 'DDIGIORGIO1637680202619' or ODM = 'DDIGIORGIO1637680796386' or ODM = 'DDIGIORGIO1637680891636' or ODM = 'DDIGIORGIO1637681061509' or ODM = 'DDIGIORGIO1637681240340' or ODM = 'DDIGIORGIO1637681495982';";
                 query = "select * from CashTransaction";
-
+                query = "select * from Machines where IsOnline = 0 order by version;";
+                query = "select ID from Machines where mid like 'Recupero%'";
 
 
                 List<string> Midlist = new List<string>();
@@ -141,19 +142,40 @@ namespace TestCasseTLK
                 Dictionary<string, string> id_mid_List = new Dictionary<string, string>();
                 MySqlDataReader dataReader;
 
-                if (File.Exists(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\DIGIORGIO.txt")) File.Delete(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\DIGIORGIO.txt");
+                if (File.Exists(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\Recupero.txt")) File.Delete(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\Recupero.txt");
 
-                StreamWriter newWriter = new StreamWriter(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\DIGIORGIO.txt", false);
+                StreamWriter newWriter = new StreamWriter(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\Recupero.txt", false);
 
                 MySqlCommand cmd = new MySqlCommand(query, connection);
                 dataReader = cmd.ExecuteReader();
                 while (dataReader.Read())
                 {
                     //id_mid_List.Add(dataReader["ODM"].ToString(), dataReader["ID_Machines"].ToString());
-                    newWriter.WriteLine(dataReader["ODM"].ToString() + "," + dataReader["ID_Machines"].ToString() + "," + dataReader["ID_MachinesConnectionTrace"].ToString() + "," + dataReader["Status"].ToString() + "," + dataReader["DataCreazione"].ToString() + "," + dataReader["DataInvioRichiesta"].ToString() + "," + dataReader["DataPacchettoRicevuto"].ToString() + "," + dataReader["DataSincronizzazione"].ToString() + "," + dataReader["TentativiAutomaticiEseguiti"].ToString());
+                    IdfromMachines.Add(dataReader["id"].ToString());
+                    //newWriter.WriteLine(dataReader["mid"].ToString() + "," + dataReader["version"].ToString() + "," + dataReader["last_communication"].ToString() );
+                }
+
+    
+                foreach (string idtemp in IdfromMachines)
+                {
+                    string t_mid = "";
+
+                    dataReader.Close();
+                    query = "SELECT transferred_data,time_stamp FROM MachinesConnectionTrace WHERE id_Macchina = '" + idtemp + "';";
+                    cmd = new MySqlCommand(query, connection);
+                    dataReader = cmd.ExecuteReader();
+                    while (dataReader.Read())
+                    {
+                        if (dataReader["transferred_data"].ToString().StartsWith("<MID="))
+                            newWriter.WriteLine(dataReader["time_stamp"].ToString() + " - " + dataReader["transferred_data"].ToString());
+                    }
+
+
                 }
                 newWriter.Close();
-                    return;
+
+                //newWriter.Close();
+                return;
 
                 StreamReader newreader = new StreamReader(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\idM3-2811.txt", Encoding.UTF8);
 
@@ -174,16 +196,18 @@ namespace TestCasseTLK
                     id_mid_List.TryGetValue(idtemp,out t_mid);
                     newWriter.WriteLine("##################### CE  "+ t_mid);
                     dataReader.Close();
-                    query = "SELECT transferred_data,time_stamp FROM machinesconnectiontrace WHERE id_Macchina = '" + idtemp + "';"; 
+                    query = "SELECT transferred_data,time_stamp FROM machinesconnectiontrace WHERE id_Macchina = '" + idtemp +  "';"; 
                     cmd = new MySqlCommand(query, connection);
                     dataReader = cmd.ExecuteReader();
                     while (dataReader.Read())
                     {
-                        newWriter.WriteLine(dataReader["time_stamp"].ToString()+" - "+dataReader["transferred_data"].ToString());
+
+                        newWriter.WriteLine(dataReader["mid"].ToString()+" - "+dataReader["version"].ToString());
 
                     }
                 }
                 newWriter.Close();
+
 
                     for (i=0;i<idlist.Length;i++)
                 {
@@ -306,14 +330,12 @@ namespace TestCasseTLK
             if (connection.State==ConnectionState.Closed) connection.Open();
 
             string query = "";
-            query = "select * from Machines where id=11516;";
+            query = "select * from Machines where id=155;";
             //query = "select * from Machines where IsOnline = 0;";
             //query = "select * from Machines where imei = 869153046561855";
 
-
-
             //query = "SELECT * from Machines where last_communication like '2021-11-10 14%';";
-            query = "SELECT * FROM Machines where mid like '%RecuperoInCorso..%'";
+            // query = "SELECT * FROM Machines where mid like '%RecuperoInCorso..%'";
             //query = "SELECT * FROM Machines where mid like '%Duplicato%'";
             //query = "select id from Machines where last_communication Like '2021-11-19%';";
 
@@ -342,9 +364,9 @@ namespace TestCasseTLK
                         {
                             if (DeleteMachinesAttributesTables(id))
                             {
-                                if (DeleteMachinesConnectionTrace(id))
+                                if (DeleteCashTransTables(id))
                                 {
-                                    if (DeleteCashTransTables(id))
+                                    if (DeleteMachinesConnectionTrace(id)) 
                                     {
                                         if (DeleteFromMachinestable(id)) Console.WriteLine(counter++);
                                     }
@@ -352,11 +374,7 @@ namespace TestCasseTLK
                             }
                         }
                     }
-
                 }
-                
-           
-
 
                 connection.Close();
 
@@ -377,7 +395,7 @@ namespace TestCasseTLK
             string query;
             try
             {
-                query = "Delete FROM Log   where ID_machine = " + id_machine;
+                query = "Delete FROM Log   where  = " + id_machine;
                 newcmd = new MySqlCommand(query, connection);
                 newcmd.ExecuteNonQuery();
                 return true;
