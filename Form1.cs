@@ -32,14 +32,14 @@ namespace TestCasseTLK
 
         MySqlConnection connection;
 
-        //string serverip = "95.61.6.94";
-        string serverip =  "10.10.10.37";
+        string serverip = "95.61.6.94";
+        //string serverip =  "10.10.10.37";
         string database = "listener_DB";
         string uid = "bot_user";
         string password = "Qwert@#!99";
         //string connectionString = "server = localhost; database = lister_DB; uid = root; pwd = ;";
-        //string connectionString = "server = 95.61.6.94; database = listener_DB; uid = bot_user; pwd = Qwert@#!99;";
-        string connectionString = "server = 10.10.10.37; database = listener_DB; uid = bot_user; pwd = Qwert@#!99;";
+        string connectionString = "server=95.61.6.94;database=listener_DB;uid=bot_user;pwd=Qwert@#!99;";
+        //string connectionString = "server = 10.10.10.37; database = listener_DB; uid = bot_user; pwd = Qwert@#!99;";
 
         //string id_Fake = "3973";
 
@@ -53,6 +53,7 @@ namespace TestCasseTLK
         {
             connection = new MySqlConnection(connectionString);
 
+            connection.Open();
             //string data_transfered = "$M1,00021905,01,100,50,605,10,0,20,0,50,61,100,200,200,17,0,0,9999,3,00056700,566,0,,,30,11,1*6F,00021905,110,89314404000711313412,863071016974070,18,,,1,0,30,240,13+02";
 
             //string[] split_data_transfered = data_transfered.Split(',');
@@ -66,16 +67,87 @@ namespace TestCasseTLK
             //LoadModemToConfig("172.16.162.19", 456456456456456, "77770001");
             //LoadModemToConfig("172.16.162.20", 789789789789789, "77770001");
 
-           // tryjoin();
+            // tryjoin();
 
 
             // testMID(); 
-            RemoveMachine();
+            // RemoveMachine();
 
             //check_Dati();
             // test_daticash_convert();
+            // Aggiorna_Instagram();
         }
 
+        private void Aggiorna_Instagram()
+        {
+            MySqlConnection connection;
+            MySqlDataReader dataReader;
+            MySqlCommand cmd;
+            List<string> IDMachinesToDel = new List<string>();
+            List<string> IDMachinesToUpdate = new List<string>();
+            List<string> MidToUpdate = new List<string>();
+
+            connection = new MySqlConnection(connectionString);
+            connection.Open();
+            string query = "";
+            query = "select id, version from  Machines where mid like 'Duplicato%' and Version like '10%';";
+            cmd = new MySqlCommand(query, connection);
+            dataReader = cmd.ExecuteReader();
+
+            int counter = 0;
+
+            while (dataReader.Read())
+            {
+                if (dataReader["version"].ToString() == "105" | dataReader["version"].ToString() == "106")
+                {
+                    counter++;
+                    IDMachinesToDel.Add(dataReader["id"].ToString());
+                }
+            }
+            //dataReader.Close();
+
+            foreach (string idtodel in IDMachinesToDel)
+            {
+                dataReader.Close();
+                //query = "select  transferred_data from  MachinesConnectionTrace where id_Macchina = " + idtodel + " and transferred_data like '<TPK=$I2%' Limit 1;";
+                query = "select  transferred_data from  MachinesConnectionTrace where id_Macchina = " + idtodel + " and transferred_data like '<MID=%' Limit 1;";
+                cmd = new MySqlCommand(query, connection);
+                dataReader = cmd.ExecuteReader();
+                while (dataReader.Read())
+                {
+                    //string[] splitStr = dataReader["transferred_data"].ToString().Split(',');
+                    //MidToUpdate.Add(splitStr[1]);
+                    string tmpstr= dataReader["transferred_data"].ToString().Replace("<","");
+                    
+                    string[] splitStr = tmpstr.Split('>');
+                    MidToUpdate.Add(splitStr[0].Substring(4, splitStr[0].Length -4));
+
+
+                }
+            }
+
+            foreach (string mid in MidToUpdate)
+            {
+                  dataReader.Close();
+                query = "select id from Machines where mid = " + mid + " Limit 1; ";
+                cmd = new MySqlCommand(query, connection);
+                dataReader = cmd.ExecuteReader();
+                while (dataReader.Read())
+                {
+                    IDMachinesToUpdate.Add(dataReader["id"].ToString());
+                }
+            }
+
+            string[] id_todel = IDMachinesToDel.ToArray();
+            string[] id_toupdate = IDMachinesToUpdate.ToArray();
+            for (int i=0;i<counter;i++)
+            {
+                DeleteMachine(id_todel[i], id_toupdate[i]);
+                Console.WriteLine("machine deleted: " + i.ToString());
+            }
+
+
+        }
 
         private void tryjoin()
         {
@@ -544,6 +616,176 @@ namespace TestCasseTLK
                 Console.WriteLine("");
             }
         }
+        public  Boolean DeleteMachine(string idtodelete, string idtoupdate)
+        {
+
+            bool valreturn = false;
+            try
+            {
+                if (UpdateLogTables(idtodelete, idtoupdate)) Console.WriteLine("DeleteMachine:UpdateLogTables ID to Update=" + idtoupdate + ", ID to Delete=" + idtodelete + " -OK");
+
+                if (UpdateRemoteCommandTables(idtodelete, idtoupdate)) Console.WriteLine("DeleteMachine:UpdateRemoteCommandTables ID to Update=" + idtoupdate + ", ID to Delete=" + idtodelete + " -OK");
+                if (DeleteMachinesAttributesTables(idtodelete)) Console.WriteLine("DeleteMachine:DeleteMachinesAttributesTables  ID to Delete=" + idtodelete + " -OK");
+                if (UpdateCashTransactionTables(idtodelete, idtoupdate)) Console.WriteLine("DeleteMachine:UpdateCashTransactionTables ID to Update=" + idtoupdate + ", ID to Delete=" + idtodelete + " -OK");
+                if (UpdateMachinesConnectionTraceTables(idtodelete, idtoupdate)) Console.WriteLine("DeleteMachine:UpdateMachinesConnectionTraceTables ID to Update=" + idtoupdate + ", ID to Delete=" + idtodelete + " -OK");
+                if (DeleteFromMachinestable(idtodelete))
+                {
+                    Console.WriteLine("DeleteMachine:DeleteFromMachinestable ID to Delete=" + idtodelete + " -OK");
+                    valreturn = true;
+                }
+
+
+                // DB.SaveChanges();
+
+                valreturn = true;
+
+                return valreturn;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(DateTime.Now.ToString("yy/MM/dd,HH:mm:ss") + " : DeleteMachine: " + e.Message);
+                Console.WriteLine(DateTime.Now.ToString("yy/MM/dd,HH:mm:ss") + " : DeleteMachine: " + e.StackTrace);
+                return valreturn;
+            }
+
+        }        /// 
+                 /// </summary>
+
+        private  bool UpdateLogTables(string id_machinetodelete, string idmachinetoupdate)
+        {
+            //listener_DBContext DB = new listener_DBContext();
+            //string connectionString = GetConnectString();
+            //MySqlConnection connection;
+            connection = new MySqlConnection(connectionString);
+            if (connection.State == ConnectionState.Closed) connection.Open();
+            try
+            {
+                MySqlCommand newcmd;
+                string query = "Update Log set ID_machine='" + idmachinetoupdate + "'  where  ID_machine  = " + id_machinetodelete;
+                newcmd = new MySqlCommand(query, connection);
+                newcmd.ExecuteNonQuery();
+                return true;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Error in UpdateLogTables: " + e.Message);
+                return false;
+            }
+        }
+        private  bool UpdateRemoteCommandTables(string id_machinetodelete, string idmachinetoupdate)
+        {
+            //listener_DBContext DB = new listener_DBContext();
+            //string connectionString = GetConnectString();
+            //MySqlConnection connection;
+            connection = new MySqlConnection(connectionString);
+            if (connection.State == ConnectionState.Closed) connection.Open();
+            try
+            {
+                MySqlCommand newcmd;
+                string query = "Update RemoteCommand set id_Macchina ='" + idmachinetoupdate + "'  where  id_Macchina  = " + id_machinetodelete;
+                newcmd = new MySqlCommand(query, connection);
+                newcmd.ExecuteNonQuery();
+                return true;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Error in UpdateRemoteCommandTables: " + e.Message);
+                return false;
+            }
+        }
+        private  bool DeleteMachinesAttributesTables(string id_machine)
+        {
+            //string connectionString = GetConnectString();
+            //MySqlConnection connection;
+            connection = new MySqlConnection(connectionString);
+            if (connection.State == ConnectionState.Closed) connection.Open();
+            MySqlCommand newcmd;
+            string query;
+            try
+            {
+              
+                query = "Delete FROM MachinesAttributes   where id_Macchina = " + id_machine;
+                newcmd = new MySqlCommand(query, connection);
+                newcmd.ExecuteNonQuery();
+              
+                return true;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("ERROR - DeleteMachinesAttributesTables: " + e.Message);
+                //connection.Close();
+                return false;
+            }
+        }
+        private  bool UpdateMachinesConnectionTraceTables(string id_machinetodelete, string idmachinetoupdate)
+        {
+            //listener_DBContext DB = new listener_DBContext();
+            //string connectionString = GetConnectString();
+            //MySqlConnection connection;
+            connection = new MySqlConnection(connectionString);
+            if (connection.State == ConnectionState.Closed) connection.Open();
+            try
+            {
+                MySqlCommand newcmd;
+                string query = "Update MachinesConnectionTrace set id_Macchina ='" + idmachinetoupdate + "'  where  id_Macchina  = " + id_machinetodelete;
+                newcmd = new MySqlCommand(query, connection);
+                newcmd.ExecuteNonQuery();
+                return true;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Error in UpdateMachinesConnectionTraceTables: " + e.Message);
+                return false;
+            }
+        }
+        private  bool UpdateCashTransactionTables(string id_machinetodelete, string idmachinetoupdate)
+        {
+            //listener_DBContext DB = new listener_DBContext();
+            //string connectionString = GetConnectString();
+            //MySqlConnection connection;
+            connection = new MySqlConnection(connectionString);
+            if (connection.State == ConnectionState.Closed) connection.Open();
+            try
+            {
+                MySqlCommand newcmd;
+                string query = "Update CashTransaction set ID_Machines ='" + idmachinetoupdate + "'  where  ID_Machines  = " + id_machinetodelete;
+                newcmd = new MySqlCommand(query, connection);
+                newcmd.ExecuteNonQuery();
+                return true;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Error in UpdateCashTransactionTables: " + e.Message);
+                return false;
+            }
+        }
+        private  bool DeleteFromMachinestable(string id_machine)
+        {
+            //string connectionString = GetConnectString();
+            //MySqlConnection connection;
+            //connection = new MySqlConnection(connectionString);
+            if (connection.State == ConnectionState.Closed) connection.Open();
+            MySqlCommand newcmd;
+            string query;
+            try
+            {
+                query = "Delete FROM Machines   where id = " + id_machine;
+                newcmd = new MySqlCommand(query, connection);
+                newcmd.ExecuteNonQuery();
+
+                //connection.Close();
+                return true;
+            }
+            catch (MySqlException e)
+            {
+                Console.WriteLine("ERROR - DeleteFromMachinestable: " + e.Message);
+                connection.Close();
+                return false;
+            }
+        }
+       
+
+        
         private bool DeleteLogTables(string id_machine)
         {
             //MySqlConnection connection;
@@ -565,27 +807,7 @@ namespace TestCasseTLK
                 return false;
             }
         }
-        private bool DeleteMachinesAttributesTables(string id_machine)
-        {
-            //MySqlConnection connection;
-            //connection = new MySqlConnection(connectionString);
-            if (connection.State == ConnectionState.Closed) connection.Open(); 
-            MySqlCommand newcmd;
-            string query;
-            try
-            {
-                query = "Delete FROM MachinesAttributes   where id_Macchina = " + id_machine;
-                newcmd = new MySqlCommand(query, connection);
-                newcmd.ExecuteNonQuery();
-                return true;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("ERROR - DeleteMachinesAttributesTables: " + e.Message);
-                //connection.Close();
-                return false;
-            }
-        }
+
         private bool DeleteCashTransTables(string id_machine)
         {
             //MySqlConnection connection;
@@ -609,52 +831,7 @@ namespace TestCasseTLK
             }
         }
 
-        public  void LoadModemToConfig(string ip_address, Int64 imei, string mid)
-        {
-            try
-            {
-                MySqlConnection connection;
-                connection = new MySqlConnection(connectionString);
-                string query = "Insert into ModemPreConfig (ip_address,imei,mid,last_communication) values ('" + ip_address + "','" + imei + "','" + mid + "','" + DateTime.Now.ToString("yy/MM/dd,HH:mm:ss") + "');";
-                MySqlCommand MyCommand = new MySqlCommand(query, connection);
-                connection.Open();
-                MySqlDataReader MyReader = MyCommand.ExecuteReader();
-                connection.Close();
-
-            }
-
-
-            catch (Exception ex)
-            {
-                Console.WriteLine("Exception LoadDatiCassaTable: " + ex.StackTrace);
-            }
-        }
-
-        private bool DeleteFromMachinestable(string id_machine)
-        {
-            //MySqlConnection connection;
-            //connection = new MySqlConnection(connectionString);
-            //connection.Open();
-            if (connection.State == ConnectionState.Closed) connection.Open();
-            MySqlCommand newcmd;
-            string query;
-            try
-            {
-                query = "Delete FROM Machines   where id = " + id_machine;
-                newcmd = new MySqlCommand(query, connection);
-                newcmd.ExecuteNonQuery();
-
-                //connection.Close();
-                return true;
-            }
-            catch(MySqlException e)
-            {
-                Console.WriteLine("ERROR - DeleteFromMachinestable: " + e.Message);
-                connection.Close();
-                return false;
-            }
-        }
-        private bool DeleteRemoteCommand(string id_machine)
+       private bool DeleteRemoteCommand(string id_machine)
         {
             //MySqlConnection connection;
             //connection = new MySqlConnection(connectionString);
@@ -731,7 +908,12 @@ namespace TestCasseTLK
 
         private void btnDelSingleMachine_Click(object sender, EventArgs e)
         {
-            Remove_SingleMachine();
+            DeleteMachine(txtIdtoDelete.Text, txtIdtoUpdate.Text);
+        }
+
+        private void label1_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

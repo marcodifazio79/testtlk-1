@@ -32,11 +32,13 @@ namespace TestCasseTLK
             this.btnDelSingleMachine = new System.Windows.Forms.Button();
             this.txtIdtoDelete = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
+            this.label2 = new System.Windows.Forms.Label();
+            this.txtIdtoUpdate = new System.Windows.Forms.TextBox();
             this.SuspendLayout();
             // 
             // btnDelSingleMachine
             // 
-            this.btnDelSingleMachine.Location = new System.Drawing.Point(149, 22);
+            this.btnDelSingleMachine.Location = new System.Drawing.Point(318, 23);
             this.btnDelSingleMachine.Name = "btnDelSingleMachine";
             this.btnDelSingleMachine.Size = new System.Drawing.Size(165, 23);
             this.btnDelSingleMachine.TabIndex = 0;
@@ -46,7 +48,7 @@ namespace TestCasseTLK
             // 
             // txtIdtoDelete
             // 
-            this.txtIdtoDelete.Location = new System.Drawing.Point(31, 25);
+            this.txtIdtoDelete.Location = new System.Drawing.Point(31, 26);
             this.txtIdtoDelete.Name = "txtIdtoDelete";
             this.txtIdtoDelete.Size = new System.Drawing.Size(100, 20);
             this.txtIdtoDelete.TabIndex = 1;
@@ -54,17 +56,36 @@ namespace TestCasseTLK
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(38, 9);
+            this.label1.Location = new System.Drawing.Point(38, 10);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(62, 13);
+            this.label1.Size = new System.Drawing.Size(71, 13);
             this.label1.TabIndex = 2;
-            this.label1.Text = "ID Machine";
+            this.label1.Text = "ID To Delete ";
+            this.label1.Click += new System.EventHandler(this.label1_Click);
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(189, 9);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(66, 13);
+            this.label2.TabIndex = 3;
+            this.label2.Text = "ID To Udate";
+            // 
+            // txtIdtoUpdate
+            // 
+            this.txtIdtoUpdate.Location = new System.Drawing.Point(171, 26);
+            this.txtIdtoUpdate.Name = "txtIdtoUpdate";
+            this.txtIdtoUpdate.Size = new System.Drawing.Size(100, 20);
+            this.txtIdtoUpdate.TabIndex = 4;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Controls.Add(this.txtIdtoUpdate);
+            this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.txtIdtoDelete);
             this.Controls.Add(this.btnDelSingleMachine);
@@ -81,6 +102,8 @@ namespace TestCasseTLK
         private System.Windows.Forms.Button btnDelSingleMachine;
         private System.Windows.Forms.TextBox txtIdtoDelete;
         private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.TextBox txtIdtoUpdate;
     }
 }
 
