@@ -23,6 +23,7 @@ namespace TestCasseTLK
             public string Id_machinesCT;
             public string last_comunication;
             public string mid;
+            public string statusonline;
             public string tempmid;
             public string ipaddress;
             public string version;
@@ -55,57 +56,32 @@ namespace TestCasseTLK
         private void Form1_Load(object sender, EventArgs e)
 
         {
+
+           // testConnessionespagna();
+
             connection = new MySqlConnection(connectionString);
 
-            //connection.Open();
-            //string data_transfered = "<TPK=$I2,00015534,YYYYYYYYYY,100,500,0931,000,0000,000,0000,050,0937,100,1919,200,1322,999,0000,999,0001,050,005,100,025,200,007,1650,1003,1358300,0363400,4150,139,579,0000000,58,12,,,,,+79,00015534,106,8939883282100406690F,866169022775205,60,,106,1,12,60,0,15*12>";
-            //string data_transfered = "<TPK=$M1,00021905,01,100,50,605,10,0,20,0,50,61,100,200,200,17,0,0,9999,3,00056700,566,0,,,30,11,1*6F,00021905,110,89314404000711313412,863071016974070,18,,,1,0,30,240,13+02";
-            //string data_transfered = "<TPK=W5,17,VL09,006702,0000016825,39,S1,0050,050,021846,999,000009,200,000042,050,000174,100,000120,000,000991,000,000564,000,000001,01121800,022388,0176,00,04*17,VL09,902,89314404000396653132,868324022978600,24,,,0,0,60,240,51+D6>";
-            //string data_transfered = "<TPK=$M3,00012649,VCG352,5,100,0,50,145795,0,160047,5,0,10,0,20,0,0,0,50,6998,100,22108,200,19937,500,17895,15495200,8204900,1,1,3,1,0,3,727441*00,00012649,110,89314404000711317413,863071010517537,23,,,0,0,30,240,11+3D>";
-            //string data_transfered = "<TPK=$M5,00021857,332,5,50,15311,50,12690,0,15348400,98969,,5,0,10,0,20,0,50,3,100,1794,200,1903,0,0,500,1680,1400150,0,0,0,0,1048576,48,50,,1,1,0,0,30,12*17,00021857,332,89314404000930500229,868714048101841,4,,,0,0,30,240,13+30>";
-
-            //string transferred_data= "<MID=77770001_8-863071019891784><VER=117>";
-            //string transferred_data = "<MID=00022942><VER=105><TYP=2>";
-            //string mMid = "";
-            //string mVersion = "";
-
-            //string[] cleanTData = transferred_data.Split('^');
-            //string[] splitTData = cleanTData[0].Split('>');
-
-            //if (transferred_data.Contains("<TYP=2>"))
-            //{
-            //    mMid = splitTData[0].Replace("<MID=", "");
-            //    mVersion = splitTData[1].Replace("<VER=", "");
-            //}
-            //else
-            //{
-            //    string[] tmsplit = splitTData[0].Split('-');
-            //    mMid = tmsplit[0].Replace("<MID=", "");
-            //    mVersion = splitTData[1].Replace("<VER=", "");
-            //}
-
-
-            //string[] split_data_transfered = data_transfered.Split(',');
-            //Console.WriteLine(split_data_transfered[split_data_transfered.Length - 5]);
-
-            //split_data_transfered[split_data_transfered.Length - 5] = "1";
-
-
-            //LoadModemToConfig("172.16.162.17", 123456789123456, "77770001");
-            //LoadModemToConfig("172.16.162.18", 123123123123123, "77770001");
-            //LoadModemToConfig("172.16.162.19", 456456456456456, "77770001");
-            //LoadModemToConfig("172.16.162.20", 789789789789789, "77770001");
-
+           
             // tryjoin();
 
 
             // testMID(); 
-            //RemoveMachine();
+            RemoveMachine();
             //test_daticash_convert();
-            //check_Dati();
+           // check_Dati();
             // test_daticash_convert();
             //Aggiorna_Instagram();
-             RimuoviDuplicato();
+           //RimuoviDuplicato();
+        }
+        private void testConnessionespagna()
+        {
+            serverip = "95.61.6.94";
+            connectionString = "server=95.61.6.94;database=listener_DB;uid=bot_user;pwd=Qwert@#!99;";
+            connection = new MySqlConnection(connectionString);
+            connection.Open();
+            if (connection.State == ConnectionState.Open)
+                MessageBox.Show("daje porco dio");
+
         }
         private void RimuoviDuplicato()
         {
@@ -709,14 +685,17 @@ namespace TestCasseTLK
                 //query = "SELECT id,mid FROM `machines` WHERE version LIKE'%838' order by mid";
                 //string query = "SELECT distinct (id_Macchina) FROM MachinesConnectionTrace WHERE transferred_data LIKE '<TPK=$M3%';";
                 
-                query = "select * from Machines where IsOnline = 0;";
-                query = "select * from CashTransaction";
-                query = "select * from Machines where IsOnline = 0 order by version;";
-                query = "select ID from Machines where mid like 'Recupero%'";
-                query = " select distinct (id_Macchina) from  MachinesConnectionTrace  where transferred_data like '<MID=00022942>%' ;";
-
+                //query = "select * from Machines where IsOnline = 0;";
+                //query = "select * from CashTransaction";
+                //query = "select * from Machines where IsOnline = 0 order by version;";
+               
+                //query = " select distinct (id_Macchina) from  MachinesConnectionTrace  where transferred_data like '<MID=00022942>%' ;";
+                query = "select id,mid,IsOnline,ip_address from Machines";
+               
                 List<string> Midlist = new List<string>();
+                List<string> IPlist = new List<string>();
                 List<string> IdfromMachines = new List<string>();
+
                 List<string> Versionlist = new List<string>();
                 Dictionary<string, string> id_vers_List = new Dictionary<string, string>();
                 Dictionary<string, string> id_mid_List = new Dictionary<string, string>();
@@ -731,25 +710,42 @@ namespace TestCasseTLK
                 while (dataReader.Read())
                 {
                     //id_mid_List.Add(dataReader["ODM"].ToString(), dataReader["ID_Machines"].ToString());
-                    IdfromMachines.Add(dataReader["id_Macchina"].ToString());
-                    //newWriter.WriteLine(dataReader["mid"].ToString() + "," + dataReader["version"].ToString() + "," + dataReader["last_communication"].ToString() );
+                    //id_mid_List.Add(dataReader["id"].ToString(), dataReader["imei"].ToString());
+                    //IPlist.Add(dataReader["ip_address"].ToString());
+                    newWriter.WriteLine(dataReader["id"].ToString() + "," + dataReader["IsOnline"].ToString() + "," + dataReader["mid"].ToString());
                 }
-
-    
-                foreach (string idtemp in IdfromMachines)
+                int i = 0;
+                newWriter.Close();
+                foreach (string idtemp in id_mid_List.Keys)
                 {
                     string t_mid = "";
 
                     dataReader.Close();
-                    query = "SELECT transferred_data,time_stamp FROM MachinesConnectionTrace WHERE id_Macchina = '" + idtemp + "';";
+                    query = "SELECT transferred_data,time_stamp,id_Macchina FROM MachinesConnectionTrace WHERE id_Macchina = '" + idtemp + "';";
+                    //query = "delete FROM MachinesConnectionTrace WHERE id = '" + idtemp + "' and transferred_data like '<MID=00007135-865733028324226><VER=110>';";
+                    
+                    
+
                     cmd = new MySqlCommand(query, connection);
+                    //cmd.ExecuteNonQuery();
+
                     dataReader = cmd.ExecuteReader();
+
                     while (dataReader.Read())
                     {
-                        if (dataReader["transferred_data"].ToString().StartsWith("<MID="))
-                            newWriter.WriteLine(dataReader["time_stamp"].ToString() + " - " + dataReader["transferred_data"].ToString());
+                        if (dataReader["transferred_data"].ToString().StartsWith("<MID=") )
+                        {
+                            if (dataReader["transferred_data"].ToString().StartsWith("<MID=00007135") | dataReader["transferred_data"].ToString().StartsWith("<MID=77770001"))
+                            { }
+                            else
+                            {
+                                newWriter.WriteLine(IPlist.ElementAt(i) + " - " + dataReader["id_Macchina"].ToString() + " - " + dataReader["time_stamp"].ToString() + " - " + id_mid_List.Values.ElementAt(i) + " - " + dataReader["transferred_data"].ToString()); 
+                            }
+                              
+                        }
+                            
                     }
-
+                    i++;
 
                 }
                 newWriter.Close();
@@ -766,7 +762,7 @@ namespace TestCasseTLK
                 string[] midlist;
 
                 newreader.Close();
-                int i = 0;
+                i = 0;
                 
 
                 Console.WriteLine("ID_Machines,CE,Version,time_creation,last_communication");
@@ -776,7 +772,7 @@ namespace TestCasseTLK
                     id_mid_List.TryGetValue(idtemp,out t_mid);
                     newWriter.WriteLine("##################### CE  "+ t_mid);
                     dataReader.Close();
-                    query = "SELECT transferred_data,time_stamp FROM machinesconnectiontrace WHERE id_Macchina = '" + idtemp +  "';"; 
+                    query = "SELECT ip_address,transferred_data,time_stamp FROM machinesconnectiontrace WHERE id_Macchina = '" + idtemp +  "';"; 
                     cmd = new MySqlCommand(query, connection);
                     dataReader = cmd.ExecuteReader();
                     while (dataReader.Read())
@@ -914,16 +910,69 @@ namespace TestCasseTLK
             query = "select * from Machines where IsOnline=0 and  last_communication like '2021-12-19%' and mid like 'Recupero%';";
             query = "select * from  Machines where imei =865733028324226 and mid like 'Duplicato%';";
            // query = "select * from Machines where mid like '00007135-%'";
-            //query = "select * from Machines where IsOnline = 0;";
-            //query = "select * from Machines where imei = 869153046561855";
+           //query = "select * from Machines where IsOnline = 0;";
+           //query = "select * from Machines where imei = 869153046561855";
 
-            //query = "SELECT * from Machines where last_communication like '2021-11-10 14%';";
-             query = "SELECT * FROM Machines where mid like '%RecuperoInCorso..%' and IsOnline=0";
+           //query = "SELECT * from Machines where last_communication like '2021-11-10 14%';";
+            query = "SELECT * FROM Machines where mid like '%RecuperoInCorso..%' and IsOnline=0";
+            query = "SELECT * FROM Machines where mid = '00016080' and IsOnline=0";
+
             //query = "SELECT * FROM Machines where mid like '%Duplicato%'";
             //query = "select id from Machines where last_communication Like '2021-11-19%';";
 
+            Dictionary<string, string> IDMachines_MidToRemove = new Dictionary<string, string>();
 
-            List<string> idlist = new List<string>();
+            StreamReader newReader = new StreamReader(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\Mid duplicati4.txt");
+
+            string tmpstr = newReader.ReadToEnd();
+
+            newReader.Close();
+            tmpstr = tmpstr.Replace("\r", "");
+            string[] DataMachine = tmpstr.Split('\n');
+
+            machineInfo = new DataMachines[DataMachine.Length];
+
+            string midappo = "";
+            for (int x = 0; x < DataMachine.Length-1; x++)
+            {
+                string[] infosplit = DataMachine[x].Split(',');
+
+                machineInfo[x].Id_machines = infosplit[0];
+                machineInfo[x].statusonline = infosplit[1];
+                machineInfo[x].mid = infosplit[2];
+
+            }
+            string midval = "";
+            for (int x = 0; x < DataMachine.Length-1; x++)
+            {
+                string idtoupdate = "";
+                if (machineInfo[x].statusonline == "True")
+                {
+                    midval = machineInfo[x].mid;
+                    idtoupdate = machineInfo[x].Id_machines;
+
+                    for (int k = 0; k < DataMachine.Length-1; k++)
+                    {
+                        if (machineInfo[k].mid == midval)
+                        {
+                            if (machineInfo[k].Id_machines != idtoupdate)
+                                DeleteMachine(machineInfo[k].Id_machines, idtoupdate);
+                        }
+
+                    }
+
+                }
+
+
+
+
+            }
+
+
+
+
+
+                List<string> idlist = new List<string>();
                 //Openconnection
             if (connection.State==ConnectionState.Open)
             {
@@ -940,13 +989,14 @@ namespace TestCasseTLK
                
                 foreach (string id in idlist)
                 {
+                    DeleteMachine(id, "51427");
                     //return;
-                    if (DeleteLogTables(id)) Console.WriteLine("DeleteLogTables: OK");
-                    if (DeleteRemoteCommand(id)) Console.WriteLine("DeleteRemoteCommand: OK");
-                    if (DeleteMachinesAttributesTables(id)) Console.WriteLine("DeleteMachinesAttributesTables: OK");
-                    if (DeleteCashTransTables(id)) Console.WriteLine("DeleteCashTransTables: OK");
-                    if (DeleteMachinesConnectionTrace(id)) Console.WriteLine("DeleteMachinesConnectionTrace: OK");
-                    if (DeleteFromMachinestable(id)) Console.WriteLine(counter++); Console.WriteLine("DeleteFromMachinestable: OK");
+                    //if (DeleteLogTables(id)) Console.WriteLine("DeleteLogTables: OK");
+                    //if (DeleteRemoteCommand(id)) Console.WriteLine("DeleteRemoteCommand: OK");
+                    //if (DeleteMachinesAttributesTables(id)) Console.WriteLine("DeleteMachinesAttributesTables: OK");
+                    //if (DeleteCashTransTables(id)) Console.WriteLine("DeleteCashTransTables: OK");
+                    //if (DeleteMachinesConnectionTrace(id)) Console.WriteLine("DeleteMachinesConnectionTrace: OK");
+                    //if (DeleteFromMachinestable(id)) Console.WriteLine(counter++); Console.WriteLine("DeleteFromMachinestable: OK");
 
                 }
 
@@ -967,7 +1017,6 @@ namespace TestCasseTLK
             try
             {
                 if (UpdateLogTables(idtodelete, idtoupdate)) Console.WriteLine("DeleteMachine:UpdateLogTables ID to Update=" + idtoupdate + ", ID to Delete=" + idtodelete + " -OK");
-
                 if (UpdateRemoteCommandTables(idtodelete, idtoupdate)) Console.WriteLine("DeleteMachine:UpdateRemoteCommandTables ID to Update=" + idtoupdate + ", ID to Delete=" + idtodelete + " -OK");
                 if (DeleteMachinesAttributesTables(idtodelete)) Console.WriteLine("DeleteMachine:DeleteMachinesAttributesTables  ID to Delete=" + idtodelete + " -OK");
                 if (UpdateCashTransactionTables(idtodelete, idtoupdate)) Console.WriteLine("DeleteMachine:UpdateCashTransactionTables ID to Update=" + idtoupdate + ", ID to Delete=" + idtodelete + " -OK");
