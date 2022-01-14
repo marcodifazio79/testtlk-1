@@ -49,6 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CashCreator.cs" />
+    <Compile Include="DB_Cleaner_Fun.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>

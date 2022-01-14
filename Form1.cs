@@ -23,6 +23,7 @@ namespace TestCasseTLK
             public string Id_machinesCT;
             public string last_comunication;
             public string mid;
+            public string imei;
             public string statusonline;
             public string tempmid;
             public string ipaddress;
@@ -30,17 +31,26 @@ namespace TestCasseTLK
 
         }
         DataMachines[] machineInfo;
+        public struct InfoDuplicati
+        {
+            public string Id_machines;
+            public string mid;
+            public string statusonline;
+        }
+        InfoDuplicati[] infiMIDduplicati_online;
+        InfoDuplicati[] infiMIDduplicati_offline;
+
 
         MySqlConnection connection;
 
         //string serverip = "95.61.6.94";
-        string serverip =  "10.10.10.37";
+        string serverip =  "10.10.10.71";
         string database = "listener_DB";
         string uid = "bot_user";
         string password = "Qwert@#!99";
         
         //string connectionString = "server=95.61.6.94;database=listener_DB;uid=bot_user;pwd=Qwert@#!99;";
-        string connectionString = "server = 10.10.10.37; database = listener_DB; uid = bot_user; pwd = Qwert@#!99;";
+        string connectionString = "server = 10.10.10.71; database = listener_DB; uid = bot_user; pwd = Qwert@#!99;";
 
         public string[] filename;
         public string[] fileFullpath;
@@ -61,17 +71,19 @@ namespace TestCasseTLK
 
             connection = new MySqlConnection(connectionString);
 
-           
+
             // tryjoin();
 
 
-            // testMID(); 
-            RemoveMachine();
+            // readList(); 
+            // RemoveMachine();
             //test_daticash_convert();
-           // check_Dati();
+            // check_Dati();
             // test_daticash_convert();
             //Aggiorna_Instagram();
-           //RimuoviDuplicato();
+            Svuota_DB();
+            //RimuoviDuplicato7777();
+            //RimuoviDuplicato();
         }
         private void testConnessionespagna()
         {
@@ -81,6 +93,42 @@ namespace TestCasseTLK
             connection.Open();
             if (connection.State == ConnectionState.Open)
                 MessageBox.Show("daje porco dio");
+
+        }
+
+        private void RimuoviDuplicato7777()
+        {
+
+            MySqlConnection connection;
+            MySqlDataReader dataReader;
+            MySqlCommand cmd;
+            Dictionary<string, string> IDMachinesToDelTemp = new Dictionary<string, string>();
+            Dictionary<string, string> RowMCTToDel = new Dictionary<string, string>();
+            List<string> IDMachinesTodelete = new List<string>();
+            
+
+            string query = "";
+
+            connection = new MySqlConnection(connectionString);
+            connection.Open();
+            query = "select id from  Machines where mid like '77770001_%' and IsOnline=0";
+            cmd = new MySqlCommand(query, connection);
+
+            cmd = new MySqlCommand(query, connection);
+            cmd.ExecuteNonQuery();
+
+            cmd.CommandTimeout = 0;
+            dataReader = cmd.ExecuteReader();
+            int k = 0;
+            
+            while (dataReader.Read())
+            {
+                IDMachinesTodelete.Add(dataReader["id"].ToString());
+            }
+            foreach (string id in IDMachinesTodelete)
+            {
+                DB_Cleaner_Fun.DeleteMachine(id, "");
+            }
 
         }
         private void RimuoviDuplicato()
@@ -107,31 +155,58 @@ namespace TestCasseTLK
                 string MidFromTransferredData = filename[i].Replace("Id_duplicatiMID_","");
                 string IDMachines_Online = "";
               
-                query = "select id from  Machines where mid = " + MidFromTransferredData + " limit 1;";
-                cmd = new MySqlCommand(query, connection);
-                cmd.CommandTimeout = 0;
-                dataReader = cmd.ExecuteReader();
-                while (dataReader.Read())
-                {
-                    IDMachines_Online = dataReader["id"].ToString();
-                }
+                 StreamReader  newReader = new StreamReader(fileFullpath[i]);
 
-                StreamReader  newReader = new StreamReader(fileFullpath[i]);
-
+                Dictionary<string, string> ListaMidDuplicatiOnline = new Dictionary<string, string>();
+                Dictionary<string, string> ListaMidDuplicatiOffline = new Dictionary<string, string>();
                 string tmpstr = newReader.ReadToEnd();
 
                 newReader.Close();
                 tmpstr = tmpstr.Replace("\r", "");
+                string[] RowData = tmpstr.Split('\n');
+                for (int x = 0; x < RowData.Length-1; x++)
+                {
+                    string[] rowSplit = RowData[x].Split(',');
+                    if (rowSplit[3]=="True")
+                    {
+                        if(!ListaMidDuplicatiOnline.ContainsKey(rowSplit[1]))ListaMidDuplicatiOnline.Add(rowSplit[1], rowSplit[0]);
+                    }
+                    else
+                    {
+                        ListaMidDuplicatiOffline.Add(rowSplit[0], rowSplit[1]);
+                    }
+
+                }
+                int kount = 0;
+                foreach (string mid in ListaMidDuplicatiOffline.Values)
+                {
+                    string idtodelete = ListaMidDuplicatiOffline.Keys.ElementAt(kount);
+                    kount++;
+                    string idtoupdate="";
+                    ListaMidDuplicatiOnline.TryGetValue(mid,out idtoupdate);
+                    if (idtoupdate==null)
+                    {
+                        
+                    }
+                    else
+                    {
+                        DB_Cleaner_Fun.DeleteMachine(idtodelete, idtoupdate);
+                    }
+
+                }
+                return;
                 string[] IDMachines_To_Remove = tmpstr.Split('\n');
+
                 for (int x=0;x<IDMachines_To_Remove.Length;x++)
                 {
+
                     if (IDMachines_To_Remove[x]!= IDMachines_Online)
                     {
-                        DeleteMachine(IDMachines_To_Remove[x], IDMachines_Online);
+                        DB_Cleaner_Fun.DeleteMachine(IDMachines_To_Remove[x], IDMachines_Online);
                     }
                 }
 
-                dataReader.Close();
+                //dataReader.Close();
             }
 
             query = "select id, last_communication from  Machines where mid like 'Duplicato%';";
@@ -235,9 +310,7 @@ namespace TestCasseTLK
                         newcmd2.ExecuteNonQuery();
 
 
-                        //query = "Delete from Machines where  id  = " + id_machinetodelete;
-                        //newcmd2 = new MySqlCommand(query, connection);
-                        //newcmd2.ExecuteNonQuery();
+                       
 
 
                     }
@@ -334,168 +407,99 @@ namespace TestCasseTLK
             string[] id_toupdate = IDMachinesToUpdate.ToArray();
             for (int i=0;i<counter;i++)
             {
-                DeleteMachine(id_todel[i], id_toupdate[i]);
+                DB_Cleaner_Fun.DeleteMachine(id_todel[i], id_toupdate[i]);
                 Console.WriteLine("machine deleted: " + i.ToString());
             }
 
 
         }
 
-        private void tryjoin()
+
+        private void readList()
         {
-            MySqlConnection connection;
-            MySqlDataReader dataReader;
-            MySqlCommand cmd;
 
-            List<string> IdfromMachines = new List<string>();
-            List<string> InfoMachines = new List<string>();
-            List<string> InfoMachinesCT = new List<string>();
-
-            //Dictionary<string, string> instaToChange = new Dictionary<string, string>();
-
-            connection = new MySqlConnection(connectionString);
-            connection.Open();
-            string query = "";
-            query = "select id, ip_address,mid,last_communication from Machines where IsOnline =1 and mid like 'RecuperoInCorso%' and ip_address not like '172.16%';";
-
-
-            // query = "select * from Machines where  mid like '%" + idread + "%';";
-            cmd = new MySqlCommand(query, connection);
-            dataReader = cmd.ExecuteReader();
-
-            int counter = 0;
-
-            while (dataReader.Read())
-            {
-                counter++;
-                InfoMachines.Add(dataReader["id"].ToString() + "," + dataReader["last_communication"].ToString() + "," + dataReader["ip_address"].ToString() + "," + dataReader["mid"].ToString());
-            }
-            dataReader.Close();
-            machineInfo = new DataMachines[counter];
-            int k=0;
-            counter = 0;
-            foreach(string info in InfoMachines)
-            {
-                string[] splitInfo = info.Split(',');
-                machineInfo[k].Id_machines = splitInfo[0];
-                machineInfo[k].ipaddress = splitInfo[2];
-                machineInfo[k].last_comunication = splitInfo[1];
-                machineInfo[k].tempmid = splitInfo[3];
-
-               
-                query = "select id,transferred_data from MachinesConnectionTrace where id_Macchina = '"+ machineInfo[k].Id_machines + "' and transferred_data like '<MID=%';";
-                cmd = new MySqlCommand(query, connection);
-                dataReader = cmd.ExecuteReader();
-                while (dataReader.Read())
-                {
-                    counter++;
-                    InfoMachinesCT.Add(dataReader["id"].ToString() + "," + dataReader["transferred_data"].ToString());
-                }
-                dataReader.Close();
-                string tmpmidnew = "";
-                foreach (string infoCT in InfoMachinesCT)
-                {
-                    string[] infoCTsplit = infoCT.Split(',');
-                    machineInfo[k].Id_machinesCT = machineInfo[k].Id_machinesCT+ infoCTsplit[0] + ",";
-
-                    if (tmpmidnew != infoCTsplit[1])
-                    {
-                        tmpmidnew = infoCTsplit[1];
-                        infoCTsplit[1] = infoCTsplit[1].Replace("<", "");
-                        string[] resplitinfoct = infoCTsplit[1].Split('>');
-                        machineInfo[k].mid = resplitinfoct[0].Replace("MID=", "");
-                        machineInfo[k].version = resplitinfoct[1].Replace("VER=", "");
-                    }
-                }
+            StreamReader newreader = new StreamReader(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\MID2.csv");
 
 
 
-                    k++;
-            }
+            Dictionary<string, InfoDuplicati> listaID_MID= new  Dictionary<string, InfoDuplicati>();
 
+            string tmpstr = newreader.ReadToEnd().Replace("\r","");
+            newreader.Close();
+            string[] RowData = tmpstr.Split('\n');
 
-
+            machineInfo = new DataMachines[RowData.Length];
             int i = 0;
-            int x = 0;
-            string tmpMID = "";
-            for (i = 0; i < machineInfo.Length; i++)
+
+            for (i=0;i< RowData.Length-1;i++)
             {
-                if (machineInfo[i].mid == null | machineInfo[i].Id_machinesCT == null)
-                {
-                    if (DeleteFromMachinestable(machineInfo[i].Id_machines)) Console.WriteLine("L'ID " + machineInfo[i].Id_machines + "è stato eliminato");
-                }
-                else
-                {
-
-                    query = " update MachinesConnectionTrace set id_Macchina=" + machineInfo[i].Id_machines + " where  transferred_data like '<MID=" + machineInfo[i].mid + ">%';";
-                    cmd = new MySqlCommand(query, connection);
-                    dataReader = cmd.ExecuteReader();
-                    dataReader.Close();
-
-
-                    query = "update Machines set mid = '" + machineInfo[i].mid + "', version = " + machineInfo[i].version + " where id = " + machineInfo[i].Id_machines + ";";
-                    cmd = new MySqlCommand(query, connection);
-                    dataReader = cmd.ExecuteReader();
-                    dataReader.Close();
-
-                    machineInfo[i].Id_machinesCT = machineInfo[i].Id_machinesCT.Substring(0, machineInfo[i].Id_machinesCT.Length - 1);
-                    string[] IdCTtoremove = machineInfo[i].Id_machinesCT.Split(',');
-                    for (x = 0; x < IdCTtoremove.Length; x++)
-                    {
-                        query = "update CashTransaction set ID_Machines = '" + machineInfo[i].Id_machines + "' where ID_Machines = " + IdCTtoremove[x] + ";";
-                        cmd = new MySqlCommand(query, connection);
-                        dataReader = cmd.ExecuteReader();
-                        dataReader.Close();
-                        //query = "update DatiCassa set ID_Machines = '" + machineInfo[i].mid + "' where ID_Machines = " + IdCTtoremove[x] + ";";
-                        //cmd = new MySqlCommand(query, connection);
-                        //dataReader = cmd.ExecuteReader();
-                        //dataReader.Close();
-                    }
-
-                }
+                string[] infoSplit = RowData[i].Split(',');
+                machineInfo[i].Id_machines = infoSplit[0];
+                machineInfo[i].mid= infoSplit[1];
+                machineInfo[i].imei= infoSplit[2];
+                machineInfo[i].statusonline = infoSplit[3];
+               // listaID_MID.Add(infoSplit[0], infoSplit[1]);
             }
-            //if (instaToChangeIdToremove[i] == instaToChangeIdOK[i])
-            //    {
-            //        if (DeleteLogTables(instaToChangeIdToremove[i]))
-            //        {
-            //            if (DeleteRemoteCommand(instaToChangeIdToremove[i]))
-            //            {
-            //                if (DeleteMachinesAttributesTables(instaToChangeIdToremove[i]))
-            //                {
-            //                    if (DeleteFromMachinestable(instaToChangeIdToremove[i])) Console.WriteLine(counter++);
-            //                }
-            //            }
-            //        }
-            //        else
-            //        {
-            //            if (DeleteFromMachinestable(instaToChangeIdToremove[i])) Console.WriteLine(counter++);
-            //        }
-            //    }
+
             
 
+            i =0;
+            int k=0;
+            string tmpmid = "";
+            string tmpstatus = "";
+            string tmpID = "";
 
-            for (i=0;i< machineInfo.Length;i++)
+            if (File.Exists(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\MID_Doppi.csv")) File.Delete(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\MID_Doppi.csv");
+
+            StreamWriter newWriter = new StreamWriter(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\MID_Doppi.csv",false);
+
+            for (i = 0; i < RowData.Length - 1; i++)
             {
-               //dataReader.Close();
-                query = "select id,id_Macchina,time_stamp, transferred_data from  MachinesConnectionTrace where id_Macchina='" + machineInfo[i].Id_machines + "' and transferred_data like '<MID=%';";
-                cmd = new MySqlCommand(query, connection);
-                dataReader = cmd.ExecuteReader();
-                while (dataReader.Read())
+
+                tmpmid = machineInfo[i].mid;
+
+                if (tmpmid == machineInfo[i+1].mid)
                 {
-                    //newWriter.WriteLine(dataReader["id"].ToString() + ","+ dataReader["id_Macchina"].ToString() + "," + dataReader["time_stamp"].ToString() + "," + dataReader["transferred_data"].ToString());
+                    tmpstatus = machineInfo[i].statusonline;
+                    tmpID= machineInfo[i].Id_machines;
+                    newWriter.WriteLine(machineInfo[i].Id_machines + "," + machineInfo[i].mid + "," + machineInfo[i].imei + "," + machineInfo[i].statusonline);
+
+                    for (k=i+1;k < RowData.Length - 1; k++)
+                    {
+                        if (tmpmid== machineInfo[k].mid)
+                        {
+                            newWriter.WriteLine(machineInfo[k].Id_machines + "," + machineInfo[k].mid + "," + machineInfo[k].imei + "," + machineInfo[k].statusonline);
+                        }
+                        else
+                        {
+                            i = k;
+                            goto exitfor;
+                        }
+                    }
+                exitfor:
+                    i = i;
                 }
+                else 
+                { 
+                   
+                }
+                
             }
-           // newWriter.Close();
+            newWriter.Close();
+
 
 
         }
-        private void testMID()
+
+
+        private void WriteList()
         {
             //connection = new MySqlConnection(connectionString);
             if (connection.State == ConnectionState.Closed) connection.Open();
 
             string query = "";
             query = "select* from MachinesConnectionTrace where transferred_data like '<MID=%';";
+            query = "select id,mid,imei,isonline  from  Machines;";
 
             MySqlCommand cmd = new MySqlCommand(query, connection);
             MySqlDataReader dataReader = cmd.ExecuteReader();
@@ -503,11 +507,12 @@ namespace TestCasseTLK
 
             while (dataReader.Read())
             {
-                newWriter.WriteLine(dataReader["transferred_data"].ToString().Substring(0,10));
+                newWriter.WriteLine(dataReader["id"].ToString() + "," + dataReader["mid"].ToString() + "," + dataReader["imei"].ToString() + ","+ dataReader["isonline"].ToString());
             }
             //idlist.Add("144");
             dataReader.Close();
             newWriter.Close();
+
 
 
         }
@@ -690,7 +695,7 @@ namespace TestCasseTLK
                 //query = "select * from Machines where IsOnline = 0 order by version;";
                
                 //query = " select distinct (id_Macchina) from  MachinesConnectionTrace  where transferred_data like '<MID=00022942>%' ;";
-                query = "select id,mid,IsOnline,ip_address from Machines";
+                query = "select id,mid,IsOnline,ip_address from Machines order by mid ASC";
                
                 List<string> Midlist = new List<string>();
                 List<string> IPlist = new List<string>();
@@ -701,9 +706,9 @@ namespace TestCasseTLK
                 Dictionary<string, string> id_mid_List = new Dictionary<string, string>();
                 MySqlDataReader dataReader;
 
-                if (File.Exists(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\Recupero.txt")) File.Delete(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\Recupero.txt");
+                if (File.Exists(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\Mid duplicati.txt")) File.Delete(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\Mid duplicati.txt");
 
-                StreamWriter newWriter = new StreamWriter(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\Recupero.txt", false);
+                StreamWriter newWriter = new StreamWriter(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\Mid duplicati.txt", false);
 
                 MySqlCommand cmd = new MySqlCommand(query, connection);
                 dataReader = cmd.ExecuteReader();
@@ -716,6 +721,7 @@ namespace TestCasseTLK
                 }
                 int i = 0;
                 newWriter.Close();
+                return;
                 foreach (string idtemp in id_mid_List.Keys)
                 {
                     string t_mid = "";
@@ -885,13 +891,14 @@ namespace TestCasseTLK
             newcmd = new MySqlCommand(query, connection);
             newcmd.ExecuteNonQuery();
 
+            query = "Delete FROM CashTransaction;";
+            newcmd = new MySqlCommand(query, connection);
+            newcmd.ExecuteNonQuery();
+
             query = "Delete from MachinesConnectionTrace;";
             newcmd = new MySqlCommand(query, connection);
             newcmd.ExecuteNonQuery();
 
-            query = "Delete FROM CashTransaction;";
-            newcmd = new MySqlCommand(query, connection);
-            newcmd.ExecuteNonQuery();
 
             query = "Delete FROM Machines;";
             newcmd = new MySqlCommand(query, connection);
@@ -907,370 +914,105 @@ namespace TestCasseTLK
 
             string query = "";
             query = "select * from  Machines where IsOnline=0 and mid like '77770001_%';";
-            query = "select * from Machines where IsOnline=0 and  last_communication like '2021-12-19%' and mid like 'Recupero%';";
-            query = "select * from  Machines where imei =865733028324226 and mid like 'Duplicato%';";
-           // query = "select * from Machines where mid like '00007135-%'";
-           //query = "select * from Machines where IsOnline = 0;";
-           //query = "select * from Machines where imei = 869153046561855";
-
-           //query = "SELECT * from Machines where last_communication like '2021-11-10 14%';";
-            query = "SELECT * FROM Machines where mid like '%RecuperoInCorso..%' and IsOnline=0";
-            query = "SELECT * FROM Machines where mid = '00016080' and IsOnline=0";
-
+            query = "select * from  Machines where IsOnline=0 and mid = '00010032;";
+            //query = "select * from Machines where IsOnline=0 and  last_communication like '2021-12-19%' and mid like 'Recupero%';";
+            //query = "select * from  Machines where imei =865733028324226 and mid like 'Duplicato%';";
+            // query = "select * from Machines where mid like '00007135-%'";
+            //query = "select * from Machines where IsOnline = 0;";
+            //query = "select * from Machines where imei = 869153046561855";
             //query = "SELECT * FROM Machines where mid like '%Duplicato%'";
             //query = "select id from Machines where last_communication Like '2021-11-19%';";
-
-            Dictionary<string, string> IDMachines_MidToRemove = new Dictionary<string, string>();
-
-            StreamReader newReader = new StreamReader(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\Mid duplicati4.txt");
-
-            string tmpstr = newReader.ReadToEnd();
-
-            newReader.Close();
-            tmpstr = tmpstr.Replace("\r", "");
-            string[] DataMachine = tmpstr.Split('\n');
-
-            machineInfo = new DataMachines[DataMachine.Length];
-
-            string midappo = "";
-            for (int x = 0; x < DataMachine.Length-1; x++)
-            {
-                string[] infosplit = DataMachine[x].Split(',');
-
-                machineInfo[x].Id_machines = infosplit[0];
-                machineInfo[x].statusonline = infosplit[1];
-                machineInfo[x].mid = infosplit[2];
-
-            }
-            string midval = "";
-            for (int x = 0; x < DataMachine.Length-1; x++)
-            {
-                string idtoupdate = "";
-                if (machineInfo[x].statusonline == "True")
-                {
-                    midval = machineInfo[x].mid;
-                    idtoupdate = machineInfo[x].Id_machines;
-
-                    for (int k = 0; k < DataMachine.Length-1; k++)
-                    {
-                        if (machineInfo[k].mid == midval)
-                        {
-                            if (machineInfo[k].Id_machines != idtoupdate)
-                                DeleteMachine(machineInfo[k].Id_machines, idtoupdate);
-                        }
-
-                    }
-
-                }
+            //query = "SELECT * from Machines where last_communication like '2021-11-10 14%';";
+            //query = "SELECT * FROM Machines where mid like '%RecuperoInCorso..%' and IsOnline=0";
+            query = "SELECT * FROM Machines";// and IsOnline=0";
 
 
 
+            //Dictionary<string, string> IDMachines_MidToRemove = new Dictionary<string, string>();
 
-            }
+            //StreamReader newReader = new StreamReader(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\Mid duplicati.txt");
+
+            //string tmpstr = newReader.ReadToEnd();
+
+            //newReader.Close();
+            //tmpstr = tmpstr.Replace("\r", "");
+            //string[] DataMachine = tmpstr.Split('\n');
+
+            //machineInfo = new DataMachines[DataMachine.Length];
+
+            //string midappo = "";
+            //for (int x = 0; x < DataMachine.Length - 1; x++)
+            //{
+            //    string[] infosplit = DataMachine[x].Split(',');
+
+            //    machineInfo[x].Id_machines = infosplit[0];
+            //    machineInfo[x].statusonline = infosplit[1];
+            //    machineInfo[x].mid = infosplit[2];
+
+            //}
+            //string midval = "";
+            //for (int x = 0; x < DataMachine.Length - 1; x++)
+            //{
+            //    string idtoupdate = "";
+            //    if (machineInfo[x].statusonline == "True")
+            //    {
+            //        midval = machineInfo[x].mid;
+            //        idtoupdate = machineInfo[x].Id_machines;
+
+            //        for (int k = 0; k < DataMachine.Length - 1; k++)
+            //        {
+            //            if (machineInfo[k].mid == midval)
+            //            {
+            //                if (machineInfo[k].Id_machines != idtoupdate)
+            //                    DB_Cleaner_Fun.DeleteMachine(machineInfo[k].Id_machines, idtoupdate);
+            //            }
+
+            //        }
+
+            //    }
+            //}
 
 
 
 
 
-                List<string> idlist = new List<string>();
-                //Openconnection
-            if (connection.State==ConnectionState.Open)
+            List<string> idlist = new List<string>();
+            //Openconnection
+            if (connection.State == ConnectionState.Open)
             {
                 MySqlCommand cmd = new MySqlCommand(query, connection);
                 MySqlDataReader dataReader = cmd.ExecuteReader();
-                        
+
                 while (dataReader.Read())
                 {
-                     idlist.Add(dataReader["id"].ToString());
+                    idlist.Add(dataReader["id"].ToString());
                 }
                 //idlist.Add("144");
                 dataReader.Close();
-                int counter = 0;     
-               
+                int counter = 0;
+
+                string id_to_update = "0";
+
                 foreach (string id in idlist)
                 {
-                    DeleteMachine(id, "51427");
-                    //return;
-                    //if (DeleteLogTables(id)) Console.WriteLine("DeleteLogTables: OK");
-                    //if (DeleteRemoteCommand(id)) Console.WriteLine("DeleteRemoteCommand: OK");
-                    //if (DeleteMachinesAttributesTables(id)) Console.WriteLine("DeleteMachinesAttributesTables: OK");
-                    //if (DeleteCashTransTables(id)) Console.WriteLine("DeleteCashTransTables: OK");
-                    //if (DeleteMachinesConnectionTrace(id)) Console.WriteLine("DeleteMachinesConnectionTrace: OK");
-                    //if (DeleteFromMachinestable(id)) Console.WriteLine(counter++); Console.WriteLine("DeleteFromMachinestable: OK");
+                  if (id !=id_to_update)   DB_Cleaner_Fun.DeleteMachine(id, id_to_update);
 
                 }
 
                 connection.Close();
 
-                //return list to be displayed
-               
             }
             else
             {
                 Console.WriteLine("");
             }
         }
-        public  Boolean DeleteMachine(string idtodelete, string idtoupdate)
-        {
+        
 
-            bool valreturn = false;
-            try
-            {
-                if (UpdateLogTables(idtodelete, idtoupdate)) Console.WriteLine("DeleteMachine:UpdateLogTables ID to Update=" + idtoupdate + ", ID to Delete=" + idtodelete + " -OK");
-                if (UpdateRemoteCommandTables(idtodelete, idtoupdate)) Console.WriteLine("DeleteMachine:UpdateRemoteCommandTables ID to Update=" + idtoupdate + ", ID to Delete=" + idtodelete + " -OK");
-                if (DeleteMachinesAttributesTables(idtodelete)) Console.WriteLine("DeleteMachine:DeleteMachinesAttributesTables  ID to Delete=" + idtodelete + " -OK");
-                if (UpdateCashTransactionTables(idtodelete, idtoupdate)) Console.WriteLine("DeleteMachine:UpdateCashTransactionTables ID to Update=" + idtoupdate + ", ID to Delete=" + idtodelete + " -OK");
-                if (UpdateMachinesConnectionTraceTables(idtodelete, idtoupdate)) Console.WriteLine("DeleteMachine:UpdateMachinesConnectionTraceTables ID to Update=" + idtoupdate + ", ID to Delete=" + idtodelete + " -OK");
-                if (DeleteFromMachinestable(idtodelete))
-                {
-                    Console.WriteLine("DeleteMachine:DeleteFromMachinestable ID to Delete=" + idtodelete + " -OK");
-                    valreturn = true;
-                }
-
-
-                // DB.SaveChanges();
-
-                valreturn = true;
-
-                return valreturn;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(DateTime.Now.ToString("yy/MM/dd,HH:mm:ss") + " : DeleteMachine: " + e.Message);
-                Console.WriteLine(DateTime.Now.ToString("yy/MM/dd,HH:mm:ss") + " : DeleteMachine: " + e.StackTrace);
-                return valreturn;
-            }
-
-        }        /// 
+           /// 
                  /// </summary>
 
-        private  bool UpdateLogTables(string id_machinetodelete, string idmachinetoupdate)
-        {
-            //listener_DBContext DB = new listener_DBContext();
-            //string connectionString = GetConnectString();
-            //MySqlConnection connection;
-            connection = new MySqlConnection(connectionString);
-            if (connection.State == ConnectionState.Closed) connection.Open();
-            try
-            {
-                MySqlCommand newcmd;
-                string query = "Update Log set ID_machine='" + idmachinetoupdate + "'  where  ID_machine  = " + id_machinetodelete;
-                newcmd = new MySqlCommand(query, connection);
-                newcmd.ExecuteNonQuery();
-                return true;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Error in UpdateLogTables: " + e.Message);
-                return false;
-            }
-        }
-        private  bool UpdateRemoteCommandTables(string id_machinetodelete, string idmachinetoupdate)
-        {
-            //listener_DBContext DB = new listener_DBContext();
-            //string connectionString = GetConnectString();
-            //MySqlConnection connection;
-            connection = new MySqlConnection(connectionString);
-            if (connection.State == ConnectionState.Closed) connection.Open();
-            try
-            {
-                MySqlCommand newcmd;
-                string query = "Update RemoteCommand set id_Macchina ='" + idmachinetoupdate + "'  where  id_Macchina  = " + id_machinetodelete;
-                newcmd = new MySqlCommand(query, connection);
-                newcmd.ExecuteNonQuery();
-                return true;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Error in UpdateRemoteCommandTables: " + e.Message);
-                return false;
-            }
-        }
-        private  bool DeleteMachinesAttributesTables(string id_machine)
-        {
-            //string connectionString = GetConnectString();
-            //MySqlConnection connection;
-            connection = new MySqlConnection(connectionString);
-            if (connection.State == ConnectionState.Closed) connection.Open();
-            MySqlCommand newcmd;
-            string query;
-            try
-            {
-              
-                query = "Delete FROM MachinesAttributes   where id_Macchina = " + id_machine;
-                newcmd = new MySqlCommand(query, connection);
-                newcmd.ExecuteNonQuery();
-              
-                return true;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("ERROR - DeleteMachinesAttributesTables: " + e.Message);
-                //connection.Close();
-                return false;
-            }
-        }
-        private  bool UpdateMachinesConnectionTraceTables(string id_machinetodelete, string idmachinetoupdate)
-        {
-            //listener_DBContext DB = new listener_DBContext();
-            //string connectionString = GetConnectString();
-            //MySqlConnection connection;
-            connection = new MySqlConnection(connectionString);
-            if (connection.State == ConnectionState.Closed) connection.Open();
-            try
-            {
-                MySqlCommand newcmd;
-                string query = "Update MachinesConnectionTrace set id_Macchina ='" + idmachinetoupdate + "'  where  id_Macchina  = " + id_machinetodelete;
-                newcmd = new MySqlCommand(query, connection);
-                newcmd.ExecuteNonQuery();
-                return true;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Error in UpdateMachinesConnectionTraceTables: " + e.Message);
-                return false;
-            }
-        }
-        private  bool UpdateCashTransactionTables(string id_machinetodelete, string idmachinetoupdate)
-        {
-            //listener_DBContext DB = new listener_DBContext();
-            //string connectionString = GetConnectString();
-            //MySqlConnection connection;
-            connection = new MySqlConnection(connectionString);
-            if (connection.State == ConnectionState.Closed) connection.Open();
-            try
-            {
-                MySqlCommand newcmd;
-                string query = "Update CashTransaction set ID_Machines ='" + idmachinetoupdate + "'  where  ID_Machines  = " + id_machinetodelete;
-                newcmd = new MySqlCommand(query, connection);
-                newcmd.ExecuteNonQuery();
-                return true;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Error in UpdateCashTransactionTables: " + e.Message);
-                return false;
-            }
-        }
-        private  bool DeleteFromMachinestable(string id_machine)
-        {
-            //string connectionString = GetConnectString();
-            //MySqlConnection connection;
-            //connection = new MySqlConnection(connectionString);
-            if (connection.State == ConnectionState.Closed) connection.Open();
-            MySqlCommand newcmd;
-            string query;
-            try
-            {
-                query = "Delete FROM Machines   where id = " + id_machine;
-                newcmd = new MySqlCommand(query, connection);
-                newcmd.ExecuteNonQuery();
-
-                //connection.Close();
-                return true;
-            }
-            catch (MySqlException e)
-            {
-                Console.WriteLine("ERROR - DeleteFromMachinestable: " + e.Message);
-                connection.Close();
-                return false;
-            }
-        }
-       
-
-        
-        private bool DeleteLogTables(string id_machine)
-        {
-            //MySqlConnection connection;
-            //connection = new MySqlConnection(connectionString);
-            if (connection.State == ConnectionState.Closed) connection.Open();
-            MySqlCommand newcmd;
-            string query;
-            try
-            {
-                query = "Delete FROM Log   where ID_machine = " + id_machine;
-                newcmd = new MySqlCommand(query, connection);
-                newcmd.ExecuteNonQuery();
-                return true;
-            }
-            catch(Exception e)
-            {
-                Console.WriteLine("ERROR - DeleteLogTables: " + e.Message);
-                //connection.Close();
-                return false;
-            }
-        }
-
-        private bool DeleteCashTransTables(string id_machine)
-        {
-            //MySqlConnection connection;
-            //connection = new MySqlConnection(connectionString);
-            if (connection.State == ConnectionState.Closed) connection.Open();
-            MySqlCommand newcmd;
-            string query;
-            try
-            {
-                query = "Delete FROM CashTransaction   where id = " + id_machine;
-                newcmd = new MySqlCommand(query, connection);
-                newcmd.ExecuteNonQuery();
-                //connection.Close();
-                return true;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("ERROR - DeleteCashTransTables: " + e.Message);
-                //connection.Close();
-                return false;
-            }
-        }
-
-       private bool DeleteRemoteCommand(string id_machine)
-        {
-            //MySqlConnection connection;
-            //connection = new MySqlConnection(connectionString);
-            if (connection.State == ConnectionState.Closed) connection.Open();
-            MySqlCommand newcmd;
-            string query;
-            try
-            {
-                query = "Delete FROM RemoteCommand  where id_Macchina = " + id_machine;
-                newcmd = new MySqlCommand(query, connection);
-                newcmd.ExecuteNonQuery();
-                //connection.Close();
-                return true;
-            }
-            catch (MySqlException e)
-            {
-                Console.WriteLine("ERROR - DeleteRemoteCommand: " + e.Message);
-                //connection.Close();
-                return false;
-            }
-
-        }
-
-        private bool DeleteMachinesConnectionTrace(string id_machine)
-        {
-            //MySqlConnection connection;
-            //connection = new MySqlConnection(connectionString);
-            if (connection.State == ConnectionState.Closed) connection.Open();
-            MySqlCommand newcmd;
-            string query;
-            try
-            {
-                query = "Delete from MachinesConnectionTrace where id_Macchina = " + id_machine;
-                newcmd = new MySqlCommand(query, connection);
-                newcmd.ExecuteNonQuery();
-                //connection.Close();
-                return true;
-            }
-            catch (MySqlException e)
-            {
-                Console.WriteLine("ERROR - DeleteMachinesConnectionTrace: " + e.Message);
-                //connection.Close();
-                return false;
-            }
-            
-        }
+    
         private bool OpenConnection()
         {
             try
@@ -1301,10 +1043,15 @@ namespace TestCasseTLK
 
         private void btnDelSingleMachine_Click(object sender, EventArgs e)
         {
-            DeleteMachine(txtIdtoDelete.Text, txtIdtoUpdate.Text);
+            DB_Cleaner_Fun.DeleteMachine(txtIdtoDelete.Text, txtIdtoUpdate.Text);
         }
 
         private void label1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void txtIdtoDelete_TextChanged(object sender, EventArgs e)
         {
 
         }

@@ -52,6 +52,7 @@ namespace TestCasseTLK
             this.txtIdtoDelete.Name = "txtIdtoDelete";
             this.txtIdtoDelete.Size = new System.Drawing.Size(100, 20);
             this.txtIdtoDelete.TabIndex = 1;
+            this.txtIdtoDelete.TextChanged += new System.EventHandler(this.txtIdtoDelete_TextChanged);
             // 
             // label1
             // 
