@@ -74,11 +74,11 @@ namespace TestCasseTLK
 
 
             // tryjoin();
-            //WriteList();
+            //WriteList(false);
             //RemoveRecuperoxxx();
-            //RemoveMID_DUPLICATOxxx();
+            // RemoveMID_DUPLICATOxxx();
             //return;
-           //ReadList_RemoveDuplicates(); 
+            //ReadList_RemoveDuplicates(); 
             // RemoveMachine();
             //test_daticash_convert();
             // check_Dati();
@@ -87,8 +87,27 @@ namespace TestCasseTLK
             //Svuota_DB();
             // RimuoviDuplicato7777();
             //RimuoviDuplicato();
-         
+            testUbuntu20_Mysql8();
+
+
+        }
+        private void testUbuntu20_Mysql8()
+        {
+            serverip = "192.168.17.208";
+            connectionString = "server=192.168.17.208;database=dbtest;uid=testwriter;pwd=password;";
+            connection = new MySqlConnection(connectionString);
+            connection.Open();
+            if (connection.State == ConnectionState.Open)
+                MessageBox.Show("daje porco d");
+
+            string Query = "insert into packet(rawPacket,ipAddress,port) values('nuovo pacchetto23','192.2.0.0','6598');";
             
+                        
+            MySqlCommand MyCommand2 = new MySqlCommand(Query, connection);
+            
+            MyCommand2.ExecuteReader();     // Here our query will be executed and data saved into the database.  
+            MessageBox.Show("Save Data");
+
         }
         private void testConnessionespagna()
         {
@@ -165,27 +184,45 @@ namespace TestCasseTLK
             Dictionary<string, string> RowMCTToDel = new Dictionary<string, string>();
             List<string> IDMachinesTodelete = new List<string>();
 
+            // lettura dati da DB
 
+            //query = "select id, IsOnline from  Machines where mid like 'Recupero%';";
+            //cmd = new MySqlCommand(query, connection);
+            //dataReader = cmd.ExecuteReader();
 
-            /////preparazione file
+            //while (dataReader.Read())
+            //{
+            //    counter++;
+            //    IDMachinesSelect.Add(dataReader["id"].ToString(), dataReader["IsOnline"].ToString());
+            //}
+            //dataReader.Close();
 
-            query = "select id, IsOnline from  Machines where mid like 'Recupero%';";
-            cmd = new MySqlCommand(query, connection);
-            dataReader = cmd.ExecuteReader();
+            // lettura dati da File
+            string tmpstr = "";
 
+            StreamReader newReader = new StreamReader(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\UltimiDoppi.txt");
 
-            while (dataReader.Read())
+            tmpstr = newReader.ReadToEnd();
+
+            newReader.Close();
+            tmpstr = tmpstr.Replace("\r", "");
+            string[] RowData = tmpstr.Split('\n');
+            for (int x = 0; x < RowData.Length; x++)
             {
-                counter++;
-                IDMachinesSelect.Add(dataReader["id"].ToString(), dataReader["IsOnline"].ToString());
+                string[] splitRowData = RowData[x].Split(',');
+                IDMachinesSelect.Add(splitRowData[0], splitRowData[1]);
+
             }
+            /// fine lettura dati
+            /////preparazione file
+            ///
 
             counter = 0;
-            if (File.Exists(@"C:\Users\mdifazio\Desktop\temp\MIDStringListRecupero.txt")) File.Delete(@"C:\Users\mdifazio\Desktop\temp\MIDStringListRecupero.txt");
-            StreamWriter newWriter = new StreamWriter(@"C:\Users\mdifazio\Desktop\temp\MIDStringListRecupero.txt", false);
+            if (File.Exists(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\MIDStringListRecupero.txt")) File.Delete(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\MIDStringListRecupero.txt");
+            StreamWriter newWriter = new StreamWriter(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\MIDStringListRecupero.txt", false);
             foreach (string idtodel in IDMachinesSelect.Keys)
             {
-                dataReader.Close();
+                
                 query = "select id, transferred_data,ip_address,id_Macchina from  MachinesConnectionTrace where id_Macchina = " + idtodel + " and transferred_data like '<MID=%' limit 1;";
                 cmd = new MySqlCommand(query, connection);
                 dataReader = cmd.ExecuteReader();
@@ -200,17 +237,18 @@ namespace TestCasseTLK
                     Console.WriteLine(counter);
 
                 }
+                dataReader.Close();
 
             }
             newWriter.Close();
-            dataReader.Close();
+           // 
 
             // fine preprazione file
-            return;
-            string tmpstr = "";
+            //return;
 
 
-            StreamReader newReader = new StreamReader(@"C:\Users\mdifazio\Desktop\temp\MIDStringList.txt");
+
+            newReader = new StreamReader(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\MIDStringList.txt");
 
             Dictionary<string, string> ListaMidDuplicatiOnline = new Dictionary<string, string>();
             Dictionary<string, string> ListaMidDuplicatiOffline = new Dictionary<string, string>();
@@ -218,44 +256,45 @@ namespace TestCasseTLK
 
             newReader.Close();
             tmpstr = tmpstr.Replace("\r", "");
-            string[] RowData = tmpstr.Split('\n');
+            RowData = tmpstr.Split('\n');
 
             machineInfo = new DataMachines[RowData.Length];
-            for (int x = 0; x < RowData.Length - 1; x++)
+            for (int x = 0; x < RowData.Length-1; x++)
             {
-
-                string[] splitRowData = RowData[x].Split(',');
-
-
-                if (RowData[x].Contains("TYP=2")) ////53001,<MID=00022942><VER=106><TYP=2>,10.10.123.265,11526
+                if (RowData[x] != "")
                 {
+                    string[] splitRowData = RowData[x].Split(',');
 
-                    machineInfo[x].Id_machinesCT = splitRowData[0];
-                    machineInfo[x].Id_machines= splitRowData[1];
-                    machineInfo[x].ipaddress = splitRowData[2];
-                    string[] tmpSplit2 = splitRowData[3].Split('>');
-                    machineInfo[x].mid = tmpSplit2[0].Replace("<MID=", "");
-                    machineInfo[x].version= tmpSplit2[1].Replace("<VER=", "");
-                    
 
+                    if (RowData[x].Contains("TYP=2")) ////53001,<MID=00022942><VER=106><TYP=2>,10.10.123.265,11526
+                    {
+
+                        machineInfo[x].Id_machinesCT = splitRowData[0];
+                        machineInfo[x].Id_machines = splitRowData[1];
+                        machineInfo[x].ipaddress = splitRowData[2];
+                        string[] tmpSplit2 = splitRowData[3].Split('>');
+                        machineInfo[x].mid = tmpSplit2[0].Replace("<MID=", "");
+                        machineInfo[x].version = tmpSplit2[1].Replace("<VER=", "");
+
+
+                    }
+                    else//53010,<MID=00012997-863071016987460><VER=110>,10.10.123.265,11526
+                    {
+                        machineInfo[x].Id_machinesCT = splitRowData[0];
+                        machineInfo[x].Id_machines = splitRowData[1];
+                        machineInfo[x].ipaddress = splitRowData[2];
+                        string[] tmpSplit2 = splitRowData[3].Split('>');
+                        tmpSplit2[0] = tmpSplit2[0].Replace("<MID=", "");
+                        string[] tmpSplit3 = tmpSplit2[0].Split('-');
+                        machineInfo[x].mid = tmpSplit3[0];
+                        machineInfo[x].imei = tmpSplit3[1];
+
+                        machineInfo[x].version = tmpSplit2[1].Replace("<VER=", "");
+
+                    }
                 }
-                else//53010,<MID=00012997-863071016987460><VER=110>,10.10.123.265,11526
-                {
-                    machineInfo[x].Id_machinesCT = splitRowData[0];
-                    machineInfo[x].Id_machines = splitRowData[1];
-                    machineInfo[x].ipaddress = splitRowData[2];
-                    string[] tmpSplit2 = splitRowData[3].Split('>');
-                    tmpSplit2[0]= tmpSplit2[0].Replace("<MID=", "");
-                    string[] tmpSplit3 = tmpSplit2[0].Split('-');
-                    machineInfo[x].mid = tmpSplit3[0];
-                    machineInfo[x].imei = tmpSplit3[1];
-
-                    machineInfo[x].version = tmpSplit2[1].Replace("<VER=", "");
-                    
-                }
-
             }
-            for (i = 339; i < machineInfo.Length - 1; i++)
+            for (i = 0; i < machineInfo.Length - 1; i++)
             {
 
                 query = "select count(id) from  Machines where mid = "+ machineInfo[i].mid + ";";
@@ -295,11 +334,11 @@ namespace TestCasseTLK
                     }
                     else
                     {
-                        query = "Update Machines set  ip_address='"+ machineInfo[i].ipaddress + "', imei=" + machineInfo[i].imei + ", mid=" + machineInfo[i].mid + ",version=" + machineInfo[i].version + " where id ="+ machineInfo[i].Id_machines + ";";
+                        if (machineInfo[i].imei == null) machineInfo[i].imei = "0";
+                        query = "Update Machines set  ip_address='"+ machineInfo[i].ipaddress + "', imei=" + machineInfo[i].imei + ", mid=" + machineInfo[i].mid + ",version=" + machineInfo[i].version + " where id ='"+ machineInfo[i].Id_machines + "';";
                         cmd = new MySqlCommand(query, connection);
                         cmd.ExecuteNonQuery();
                     }
-
                      
                 }
 
@@ -543,7 +582,7 @@ namespace TestCasseTLK
         {
             WriteList(true);
 
-            StreamReader newreader = new StreamReader(@"C:\Users\mdifazio\Desktop\temp\MID da separare.txt");
+            StreamReader newreader = new StreamReader(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\MID da separare.txt");
 
             Dictionary<string, InfoDuplicati> listaID_MID= new  Dictionary<string, InfoDuplicati>();
 
@@ -569,9 +608,9 @@ namespace TestCasseTLK
             string tmpID = "";
             int k = 0;
             
-            if (File.Exists(@"C:\Users\mdifazio\Desktop\temp\MID_Doppi.csv")) File.Delete(@"C:\Users\mdifazio\Desktop\temp\MID_Doppi.txt");
+            if (File.Exists(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\MID_Doppi.csv")) File.Delete(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\MID_Doppi.txt");
 
-            StreamWriter newWriter = new StreamWriter(@"C:\Users\mdifazio\Desktop\temp\MID_Doppi.txt", false);
+            StreamWriter newWriter = new StreamWriter(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\MID_Doppi.txt", false);
 
             for (i = 0; i < RowData.Length - 1; i++)
             {
@@ -602,7 +641,7 @@ namespace TestCasseTLK
             tmpstr ="";
             
             
-            StreamReader newReader = new StreamReader(@"C:\Users\mdifazio\Desktop\temp\MID_Doppi.txt");
+            StreamReader newReader = new StreamReader(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\MID_Doppi.txt");
 
             Dictionary<string, string> ListaMidDuplicatiOnline = new Dictionary<string, string>();
             Dictionary<string, string> ListaMidDuplicatiOffline = new Dictionary<string, string>();
@@ -649,8 +688,8 @@ namespace TestCasseTLK
 
         private void WriteList(bool FullList)
         {
-            if (File.Exists(@"C:\Users\mdifazio\Desktop\temp\MIDlist.txt")) File.Delete(@"C:\Users\mdifazio\Desktop\temp\MIDlist.txt");
-            StreamWriter newWriter = new StreamWriter(@"C:\Users\mdifazio\Desktop\temp\MIDlist.txt", false);
+            if (File.Exists(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\MIDlist.txt")) File.Delete(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\MIDlist.txt");
+            StreamWriter newWriter = new StreamWriter(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\MIDlist.txt", false);
             //connection = new MySqlConnection(connectionString);
             if (connection.State == ConnectionState.Closed) connection.Open();
 
