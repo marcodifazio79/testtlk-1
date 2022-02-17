@@ -1,15 +1,11 @@
-﻿using System;
+﻿using MySql.Data.MySqlClient;
+using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
-using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.Data.SqlClient;
 using System.Windows.Forms;
-using MySql.Data.MySqlClient;
-using System.IO;
 
 
 namespace TestCasseTLK
@@ -17,6 +13,19 @@ namespace TestCasseTLK
     public partial class Form1 : Form
     {
 
+        public struct DataMachinesConnTrace
+        {
+            
+            public string time_stamp;
+            public string ip_address;
+            public string send_or_recv;
+            public string transferred_data;
+            public string id_Macchina;
+            public string telemetria_status;
+
+        }
+        DataMachinesConnTrace[] MCTraceInfo;
+        DataMachinesConnTrace Tmp_MCTraceInfo;
         public struct DataMachines
         {
             public string Id_machines;
@@ -50,7 +59,7 @@ namespace TestCasseTLK
         string password = "Qwert@#!99";
         
         //string connectionString = "server=95.61.6.94;database=listener_DB;uid=bot_user;pwd=Qwert@#!99;";
-        string connectionString = "server = 10.10.10.37; database = listener_DB; uid = bot_user; pwd = Qwert@#!99;";
+        string connectionString = "server = 10.10.10.71; database = listener_DB; uid = bot_user; pwd = Qwert@#!99;";
 
         public string[] filename;
         public string[] fileFullpath;
@@ -66,15 +75,12 @@ namespace TestCasseTLK
         private void Form1_Load(object sender, EventArgs e)
 
         {
-           
+            //testConnessionespagna();
 
-           // testConnessionespagna();
-
-            connection = new MySqlConnection(connectionString);
-
+            //connection = new MySqlConnection(connectionString);
 
             // tryjoin();
-            //WriteList(false);
+            //WriteList(true);
             //RemoveRecuperoxxx();
             // RemoveMID_DUPLICATOxxx();
             //return;
@@ -85,9 +91,87 @@ namespace TestCasseTLK
             // test_daticash_convert();
             //Aggiorna_Instagram();
             //Svuota_DB();
-            // RimuoviDuplicato7777();
+            //RimuoviDuplicato7777();
             //RimuoviDuplicato();
-            testUbuntu20_Mysql8();
+            //testUbuntu20_Mysql8();
+            store_old_data();
+
+        }
+
+        private void store_old_data()
+        {
+            MySqlDataReader dataReader;
+            MySqlCommand cmd;
+            int counter = 0;
+            //List<string> IDRowsToDelete = new List<string>();
+            Dictionary<string, DataMachinesConnTrace> IDRowsToDelete = new Dictionary<string, DataMachinesConnTrace>();
+            string lastday =DateTime.Now.AddDays(-8).ToString("yyyy-MM-dd");
+            connection = new MySqlConnection(connectionString);
+            connection.Open();
+
+            string query = "select id  from  MachinesConnectionTrace where time_stamp like '"+lastday+"%' order by id desc limit 1;";
+            cmd = new MySqlCommand(query, connection);
+            dataReader = cmd.ExecuteReader();
+            string id_temp="";
+            while (dataReader.Read())
+            {
+                counter++;
+                id_temp=dataReader["id"].ToString();
+
+            }
+
+            dataReader.Close();
+            if (counter == 0) return;
+            query = "select *  from  MachinesConnectionTrace where id < " + id_temp + ";";
+            cmd = new MySqlCommand(query, connection);
+            dataReader = cmd.ExecuteReader();
+
+            counter = 0;
+            while (dataReader.Read())
+            {
+                counter++;
+                Tmp_MCTraceInfo.time_stamp = dataReader["time_stamp"].ToString();
+                Tmp_MCTraceInfo.ip_address = dataReader["ip_address"].ToString(); 
+                Tmp_MCTraceInfo.send_or_recv = dataReader["send_or_recv"].ToString();
+                Tmp_MCTraceInfo.transferred_data = dataReader["transferred_data"].ToString();
+                Tmp_MCTraceInfo.id_Macchina = dataReader["id_Macchina"].ToString();
+                Tmp_MCTraceInfo.telemetria_status = dataReader["telemetria_status"].ToString();
+
+                IDRowsToDelete.Add(dataReader["id"].ToString(),Tmp_MCTraceInfo);
+            }
+
+            dataReader.Close();
+
+            string ConnStrServeBK = "server=192.168.17.208;database=WharehouseTLK;uid=tlk_service;pwd=Qwert@#!99;";
+            MySqlConnection connection_BK = new MySqlConnection(ConnStrServeBK);
+            connection_BK.Open();
+            if (connection_BK.State == ConnectionState.Open)
+            {
+                foreach (DataMachinesConnTrace tmp_data_MCT in IDRowsToDelete.Values)
+                {
+                    string[] splittimestamp = tmp_data_MCT.time_stamp.Split(' ');
+                    string tmptimestamp = splittimestamp[0].Substring(6, 4) + "-" + splittimestamp[0].Substring(3, 2) + "-" + splittimestamp[0].Substring(0, 2) + " " + splittimestamp[1];
+                    query = "insert into MachinesConnectionTrace(time_stamp,ip_address,send_or_recv,transferred_data,id_Macchina,telemetria_status) values " +
+                        "('" + tmptimestamp + "','" + tmp_data_MCT.ip_address + "','" + tmp_data_MCT.send_or_recv + "','" + tmp_data_MCT.transferred_data + "','" + tmp_data_MCT.id_Macchina + "','" + tmp_data_MCT.telemetria_status + "');";
+                    cmd = new MySqlCommand(query, connection_BK);
+                    cmd.ExecuteReader();
+                }
+
+                connection_BK.Close();
+
+                foreach (string idtodel in IDRowsToDelete.Keys)
+                {
+                    query = "Delete from MachinesConnectionTrace  where id=" + idtodel + ";";
+                    cmd = new MySqlCommand(query, connection);
+                    cmd.ExecuteReader();
+                }
+            }
+            else
+            {
+                Console.WriteLine("Spostamentamento dati da MCT non possibile per impossibilità di avviare la connessione al DB di backup");
+            }
+
+
 
 
         }
@@ -111,8 +195,9 @@ namespace TestCasseTLK
         }
         private void testConnessionespagna()
         {
-            serverip = "95.61.6.94";
+            
             connectionString = "server=95.61.6.94;database=listener_DB;uid=bot_user;pwd=Qwert@#!99;";
+            connectionString = "server=192.168.209.188;database=listener_DB;uid=bot_user;pwd=Qwert@#!99;";
             connection = new MySqlConnection(connectionString);
             connection.Open();
             if (connection.State == ConnectionState.Open)
@@ -149,6 +234,8 @@ namespace TestCasseTLK
                 IDMachinesTodelete.Add(dataReader["id"].ToString());
 
             }
+
+
             dataReader.Close();
             foreach (string id in IDMachinesTodelete)
             {
@@ -385,19 +472,17 @@ namespace TestCasseTLK
             Dictionary<string, string> IDMachinesToDelTemp = new Dictionary<string, string>();
             Dictionary<string, string> RowMCTToDel = new Dictionary<string, string>();
             List<string> IDMachinesTodelete = new List<string>();
-            
+            List<string> TMPIDMachinesTodelete = new List<string>();
+
 
             string query = "";
 
             connection = new MySqlConnection(connectionString);
             connection.Open();
-            query = "select id from  Machines where mid like '77770001_%' and IsOnline=0";
-            cmd = new MySqlCommand(query, connection);
-
+            query = "select id from  Machines where mid like '77770001_%' or mid like '5555555%' or mid like 'TCC%' and IsOnline=0";
             cmd = new MySqlCommand(query, connection);
             cmd.ExecuteNonQuery();
-
-            cmd.CommandTimeout = 0;
+//            cmd.CommandTimeout = 60;
             dataReader = cmd.ExecuteReader();
             int k = 0;
             
@@ -405,12 +490,45 @@ namespace TestCasseTLK
             {
                 IDMachinesTodelete.Add(dataReader["id"].ToString());
             }
+            dataReader.Close();
             foreach (string id in IDMachinesTodelete)
             {
                 DB_Cleaner_Fun.DeleteMachine(id, "");
             }
 
-        }
+            IDMachinesTodelete.Clear();
+
+            query = "select id from  Machines where mid like 'RecuperoInCorso%' and IsOnline=0";
+            cmd = new MySqlCommand(query, connection);
+            cmd.ExecuteNonQuery();
+            //            cmd.CommandTimeout = 60;
+            dataReader = cmd.ExecuteReader();
+            k = 0;
+
+            while (dataReader.Read())
+            {
+                TMPIDMachinesTodelete.Add(dataReader["id"].ToString());
+            }
+            dataReader.Close();  
+
+            foreach (string id in TMPIDMachinesTodelete)
+            {
+                query = "select id_Macchina,transferred_data from  MachinesConnectionTrace where id like '" + id+"' limit 1;";
+                cmd = new MySqlCommand(query, connection);
+                cmd.ExecuteNonQuery();
+                dataReader = cmd.ExecuteReader();
+                k = 0;
+                if (dataReader.RecordsAffected==-1) IDMachinesTodelete.Add(id);
+
+                dataReader.Close();
+
+            }
+            foreach (string id in IDMachinesTodelete)
+            {
+                DB_Cleaner_Fun.DeleteMachine(id, "");
+            }
+
+            }
         private void RimuoviDuplicato()
         {
             MySqlConnection connection;
@@ -688,23 +806,22 @@ namespace TestCasseTLK
 
         private void WriteList(bool FullList)
         {
-            if (File.Exists(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\MIDlist.txt")) File.Delete(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\MIDlist.txt");
-            StreamWriter newWriter = new StreamWriter(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\MIDlist.txt", false);
-            //connection = new MySqlConnection(connectionString);
+            if (File.Exists(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\05022022.txt")) File.Delete(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\05022022.txt");
+            StreamWriter newWriter = new StreamWriter(@"C:\Users\mdifazio.DEDEMPVP\Desktop\temp\05022022.txt", false);
+            connection = new MySqlConnection(connectionString);
             if (connection.State == ConnectionState.Closed) connection.Open();
 
             string query = "";
-           
+         
 
             if (FullList)
             {
-               
-                query = "select id,mid,isonline  from  Machines order by mid;";
+                query = "select time_stamp,transferred_data from MachinesConnectionTrace where time_stamp like '2022-02-05%';";// "select id,mid,isonline  from  Machines order by mid;";
                 MySqlCommand cmd = new MySqlCommand(query, connection);
                 MySqlDataReader dataReader = cmd.ExecuteReader();
                 while (dataReader.Read())
                 {
-                    newWriter.WriteLine(dataReader["id"].ToString() + "," + dataReader["mid"].ToString() + "," + dataReader["isonline"].ToString());
+                    newWriter.WriteLine(dataReader["time_stamp"].ToString() + "," + dataReader["transferred_data"].ToString());
                 }
                 dataReader.Close();
             }
