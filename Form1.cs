@@ -59,7 +59,7 @@ namespace TestCasseTLK
         string password = "Qwert@#!99";
         
         //string connectionString = "server=95.61.6.94;database=listener_DB;uid=bot_user;pwd=Qwert@#!99;";
-        string connectionString = "server = 10.10.10.71; database = listener_DB; uid = bot_user; pwd = Qwert@#!99;";
+        string connectionString = "server = 10.10.10.37; database = listener_DB; uid = bot_user; pwd = Qwert@#!99;";
 
         public string[] filename;
         public string[] fileFullpath;
@@ -94,7 +94,7 @@ namespace TestCasseTLK
             //RimuoviDuplicato7777();
             //RimuoviDuplicato();
             //testUbuntu20_Mysql8();
-            store_old_data();
+            //store_old_data();
 
         }
 
@@ -1354,6 +1354,7 @@ namespace TestCasseTLK
                 {
                     case 0:
                         MessageBox.Show("Cannot connect to server.  Contact administrator");
+              
                         break;
 
                     case 1045:
