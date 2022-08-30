@@ -156,7 +156,6 @@ namespace TestCasseTLK
         }
         public static Boolean DeleteMachine(string idtodelete, string idtoupdate)
         {
-
             bool valreturn = false;
             try
             {
@@ -170,13 +169,15 @@ namespace TestCasseTLK
                 }
                 if (idtoupdate == "")
                 {
-                    if (DeleteRemoteCommandTables(idtodelete)) Console.WriteLine("DeleteMachine:DeleteLogTables ID  to Delete=" + idtodelete + " -OK");
+                    if (DeleteRemoteCommandTables(idtodelete)) Console.WriteLine("DeleteMachine:DeleteRemoteCommandTables ID  to Delete=" + idtodelete + " -OK");
                 }
                 else
                 {
                     if (UpdateRemoteCommandTables(idtodelete, idtoupdate)) Console.WriteLine("DeleteMachine:UpdateRemoteCommandTables ID to Update=" + idtoupdate + ", ID to Delete=" + idtodelete + " -OK");
                 }
+
                 if (DeleteMachinesAttributesTables(idtodelete)) Console.WriteLine("DeleteMachine:DeleteMachinesAttributesTables  ID to Delete=" + idtodelete + " -OK");
+
                 if (idtoupdate == "")
                 {
                     if (DeleteCashTransTables(idtodelete)) Console.WriteLine("DeleteMachine:DeleteCashTransTables ID  to Delete=" + idtodelete + " -OK");
@@ -199,6 +200,12 @@ namespace TestCasseTLK
                     valreturn = true;
                 }
 
+                //delete from RemoteCommand where id_Macchina = 23039;
+                //delete from Log where ID_machine = 23039;
+                //delete from MachinesAttributes where id_Macchina = 23039;
+                //delete from CashTransaction where ID_Machines = 23039;
+                //delete from MachinesConnectionTrace where id_Macchina = 23039;
+                //delete from Machines where id = 23039;
 
                 // DB.SaveChanges();
 
